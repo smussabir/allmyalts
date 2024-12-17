@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% block title %}
+ALLmyALTS - Information
+{% endblock %}
+{% block content %}
+<section class="loader-content flex">
+    <div id="loader">    
+        <div class="loadingio-spinner-pulse-o89txhcmc6l">
+            <div class="ldio-7e77dstxs7e">
+                <div class="rounded"></div>
+                <div class="rounded"></div>
+                <div class="rounded"></div>
+            </div>
+        </div>
+        <p>Loading: <span class="load-timer"></span></p>
+    </div>
+</section>
+<section class="main-content">
+    <div id="myDiv"></div>
+    <div id="rares"></div>
+</section>    
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='info.js')}}"></script>
+<script src="{{ url_for('static', filename='moment.js')}}"></script>
+<script src="{{ url_for('static', filename='moment-timezone.js')}}"></script>
+{% endblock scripts %}

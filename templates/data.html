@@ -1,0 +1,24 @@
+{% extends "plain.html" %}
+{% block title %}
+Data
+{% endblock %}
+{% block content %}
+<table>
+    {% for item in data %}
+    {% if item.id > 2506 %}
+    <tr>
+        <td>{{ item.id }}</td><td>{{ item.name }}</td>
+    </tr>
+    <tr>
+        <td colspan=2>
+            <ul>
+        {% for tier in item.tiers %}
+                <li>{{tier.name}}</li>
+        {% endfor %}
+            </ul
+        </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>    
+{% endblock %}

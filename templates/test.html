@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Website</title>
+      </head>
+      <body>
+        <canvas id="canvas" width="1600" height="1200"></canvas>
+        <script>
+          var ctx = canvas.getContext('2d'),
+          img = new Image;
+      
+          img.onload = draw;
+          img.src = "https://render.worldofwarcraft.com/us/character/dalaran/245/225347317-main-raw.png";
+          
+          function draw() {
+          
+            var dArr = [-1,-1, 0,-1, 1,-1, -1,0, 1,0, -1,1, 0,1, 1,1], // offset array
+                s = 5,  // thickness scale
+                i = 0,  // iterator
+                x = 5,  // final position
+                y = 5;
+            
+            // draw images at offsets from the array scaled by s
+            for(; i < dArr.length; i += 2)
+              ctx.drawImage(img, x + dArr[i]*s, y + dArr[i+1]*s);
+            
+            // fill with color
+            ctx.globalCompositeOperation = "source-in";
+            ctx.fillStyle = "#FFF569";
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            
+            // draw original image in normal mode
+            ctx.globalCompositeOperation = "source-over";
+            ctx.drawImage(img, x, y);
+          } 
+        </script>      </body>
+    </html>
+    

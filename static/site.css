@@ -1,0 +1,711 @@
+/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+:root {
+  --bs-body-bg: #272b30;
+  --bs-body-color: #aaa;
+  --bs-border-radius: 0.375rem;
+  --accent: #ec008c;
+  --dark-bg: #222222;
+
+
+
+  --deathknight: #C41F3B;
+  --demonhunter: #A330C9;
+  --druid: #FF7D0A;
+  --evoker: #33937f;
+  --hunter: #ABD473;
+  --mage: #69CCF0;
+  --monk: #00FF96;
+  --paladin: #F58CBA;
+  --priest: #FFFFFF;
+  --rogue: #FFF569;
+  --shaman: #0070DE;
+  --warlock: #9482C9;
+  --warrior: #C79C6E;
+  --horde: #82161d;
+  --alliance: #00aeef;
+}
+
+.flex {
+  display: flex;
+}
+
+.deathknight {color: var(--deathknight);}
+.demonhunter {color: var(--demonhunter);}
+.druid {color: var(--druid);}
+.evoker {color: var(--evoker);}
+.hunter {color: var(--hunter);}
+.mage {color: var(--mage);}
+.monk {color: var(--monk);}
+.paladin {color: var(--paladin);}
+.priest {color: var(--priest);}
+.rogue {color: var(--rogue);}
+.shaman {color: var(--shaman);}
+.warlock {color: var(--warlock);}
+.warrior {color: var(--warrior);}
+.summary {color: #ffffff;}
+
+.card-title.deathknight {background-color: var(--deathknight);}
+.card-title.demonhunter {background-color: var(--demonhunter);}
+.card-title.druid {background-color: var(--druid);}
+.card-title.evoker {background-color: var(--evoker);}
+.card-title.hunter {background-color: var(--hunter);}
+.card-title.mage {background-color: var(--mage);}
+.card-title.monk {background-color: var(--monk);}
+.card-title.paladin {background-color: var(--paladin);}
+.card-title.priest {background-color: var(--priest);}
+.card-title.rogue {background-color: var(--rogue);}
+.card-title.shaman {background-color: var(--shaman);}
+.card-title.warlock {background-color: var(--warlock);}
+.card-title.warrior {background-color: var(--warrior);}
+.card-title.summary, .card-title.mount {background-color: #ffffff;}
+
+article.deathknight {border-color: var(--deathknight) !important;}
+article.demonhunter {border-color: var(--demonhunter) !important;}
+article.druid {border-color: var(--druid) !important;}
+article.evoker {border-color: var(--evoker) !important;}
+article.hunter {border-color: var(--hunter) !important;}
+article.mage {border-color: var(--mage) !important;}
+article.monk {border-color: var(--monk) !important;}
+article.paladin {border-color: var(--paladin) !important;}
+article.priest {border-color: var(--priest) !important;}
+article.rogue {border-color: var(--rogue) !important;}
+article.shaman {border-color: var(--shaman) !important;}
+article.warlock {border-color: var(--warlock) !important;}
+article.warrior {border-color: var(--warrior) !important;}
+article.summary, article.mount {border-color:#ffffff !important;}
+
+article.deathknight:hover {box-shadow: 0 0 40px 0 var(--deathknight);}
+article.demonhunter:hover {box-shadow: 0 0 40px 0 var(--demonhunter);}
+article.druid:hover {box-shadow: 0 0 40px 0 var(--druid);}
+article.evoker:hover {box-shadow: 0 0 40px 0 var(--evoker);}
+article.hunter:hover {box-shadow: 0 0 40px 0 var(--hunter);}
+article.mage:hover {box-shadow: 0 0 40px 0 var(--mage);}
+article.monk:hover {box-shadow: 0 0 40px 0 var(--monk);}
+article.paladin:hover {box-shadow: 0 0 40px 0 var(--paladin);}
+article.priest:hover {box-shadow: 0 0 40px 0 var(--priest);}
+article.rogue:hover {box-shadow: 0 0 40px 0 var(--rogue);}
+article.shaman:hover {box-shadow: 0 0 40px 0 var(--shaman);}
+article.warlock:hover {box-shadow: 0 0 40px 0 var(--warlock);}
+article.warrior:hover {box-shadow: 0 0 40px 0 var(--warrior);}
+article.summary:hover, article.mount:hover {box-shadow: 0 0 40px 0 #ffffff;}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-family: 'Roboto', sans-serif;
+}
+
+.container {
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: flex-start;  
+  margin-right: auto;
+  margin-left: auto;
+  max-width: 1320px;
+  flex-flow: column;
+  height: 100%;  
+}
+
+header {
+  background-color: var(--dark-bg);
+  align-items: center;
+  margin-bottom: 45px;
+  padding: 10px;
+  border-bottom-left-radius: var(--bs-border-radius);
+  border-bottom-right-radius: var(--bs-border-radius);
+}
+
+header a {
+  color: #fff;
+  text-decoration: none;  
+}
+
+nav {
+  width: 100%;
+}
+
+.logo img {
+  height: 50px;
+  margin-right: 30px;
+  width: auto;
+}
+
+.navbar-nav {
+  list-style: none;
+}
+
+nav li {
+  font-size: 1.4rem;
+  margin-right: 30px;
+}
+
+.home-content, .loader-content, .main-content {
+  flex-grow: 1;
+}
+
+.home-content, .loader-content {
+  align-items: center;
+  justify-content: center;  
+}
+
+.main-content {
+  display: none;
+  margin-bottom: 45px;
+}
+
+#loader {
+  text-align: center;
+}
+
+.timer {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-top: -20px;
+  margin-bottom: 10px;
+}
+
+.status-updates {
+  background-color: #000000;
+  border-radius: var(--bs-border-radius);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  font-weight: normal;
+  padding: 5px;
+}
+
+#alts, #mounts, #reps {
+  display: grid;
+  grid-gap: 30px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.card {
+  background-position-y: center;
+  border-radius: var(--bs-border-radius);
+  border-style: solid;
+  border-width: 3px;
+  color: var(--bs-body-color);
+  margin-bottom: 35px;
+  position: relative;
+  transition: 0.3s;
+  display: n;
+}
+
+#rares .card {
+  margin-bottom: 10px;
+  border-radius: var(--bs-border-radius);
+  border-width: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  #alts .card {
+    background-size: 200%;
+    background-position-x: -70px;
+    min-height: 300px;
+  }
+  #reps .card {
+    background-size: 200%;
+    background-position-x: center;
+    margin: 0 5px;
+    min-height: 300px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 1024px) {
+  #alts .card {
+    background-size: 250%;
+    background-position-x: -150px;
+    min-height: 400px;
+  }
+  #reps .card {
+    background-size: 250%;
+    background-position-x: center;
+    margin: 0 5px 20px 5px;
+    min-height: 400px;
+  }
+}
+
+
+@media (min-width: 1025px) {
+  #alts .card {
+    background-size: 350%;
+    background-position-x: -270px;
+    min-height: 500px;
+  }
+  #reps .card {
+    background-size: 350%;
+    background-position-x: center;
+    min-height: 500px;
+    background: none;
+  }  
+}
+
+article.summary {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.card-img-top {
+  overflow: hidden;
+  height: 300px;
+}
+
+.card-img-top > img {
+  height: auto;
+  width: 100%;
+}
+
+.card-img-top > img {
+  display: none;
+}
+
+.card-img-top > img:first-of-type {
+  display: block;
+}
+
+.card-img-top > img:hover {
+  transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
+}
+
+#alts .card-body, #reps .card-body  {
+  background-color: rgba(0, 0, 0, 0.5);
+  display: inline-block;
+  height: calc(100% - 40px);
+  min-width: 60%;
+  padding-bottom: 40px;
+}
+
+#reps .card-body {
+  background-color: var(--dark-bg);
+  align-items: center;
+  width: 100%;
+}
+
+#rares .card-body {
+  background-color: var(--dark-bg);
+  /* width: calc(100% - 20px); */
+  align-items: center;
+}
+
+#filter {
+  background-color: var(--accent);
+  border-radius: var(--bs-border-radius);
+  margin-bottom: 30px;
+  padding: 10px;
+}
+
+#filter label {
+  color: #ffffff;
+  font-size: .9rem;
+  font-weight: bold;
+  margin-right: 10px;
+  text-transform: uppercase;
+}
+
+#filterInput {
+  border: none;
+  border-radius: var(--bs-border-radius);
+  color: var(--dark-bg);
+  font-size: 1.2rem;
+  margin-right: 10px;
+  padding: 0 5px;
+}
+
+#filter select {
+  border: none;
+  border-radius: var(--bs-border-radius);
+  color: var(--dark-bg);
+  font-size: 1.2rem;
+  margin-right: 20px;
+}
+
+#filterInput::placeholder {
+  color: #aaa;
+  font-size: .8rem;
+}
+
+#filterInput:focus, #filter select {
+  outline: none;
+}
+
+#filterInput:focus::placeholder {
+  color: transparent;
+}
+
+#filter .fa-solid {
+  color: #ffffff;
+}
+
+#filter button {
+  background: none;
+  border: none;
+}
+
+.reset-filter {
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.reset-filter:hover {
+  transform: scale(1.4);
+}
+
+.note {
+  font-size: .8rem;
+  margin-top: 10px;
+}
+
+.summary .card-body {
+  background-color: rgba(0, 0, 0, 0.8);
+  width: 100%;
+}
+
+#mounts .card-body, #rares .card-body {
+  font-size: .9rem;
+  padding: 10px 10px 30px 10px;
+}
+
+#rares .card-body {
+  padding: 10px;
+}
+
+.card-title {
+  border-radius: 2rem;
+  color: #222222;
+  font-weight: bold;
+  font-size: 1.3rem;
+  left: 5px;
+  padding: 5px 10px;
+  position: absolute;
+  text-transform: uppercase;
+  top: -15px;
+  /* text-shadow: 1px 1px 4px #222222; */
+}
+
+#mounts .card-title {
+  background-color: var(--accent);
+  color: #ffffff;
+  font-size: .9em;
+  padding: 8px 10px;
+}
+
+#rares .card-title {
+  color: var(--accent);
+  font-size: 1.3em;
+  margin-right: 20px;
+  position: unset;
+  width: 5%;
+  text-align: center;
+}
+
+.card-title.summary {
+  text-transform: none;
+}
+
+.rare h2 {
+  margin-right: 20px;
+  width: 25%;
+}
+
+.rare h2 a {
+  color: #ffffff;
+  font-size: 1.3rem;
+  text-decoration: none;
+}
+
+.rare .location {
+  font-size: 1.1rem;
+}
+
+.card-body > dl {
+  margin: 10px 5px 0 15px;
+}
+
+.card-body > dl:first-of-type {
+  margin: 30px 5px 30px 15px;
+}
+
+.card-body > dl dt {
+  color: deepskyblue;
+  font-size: .6rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.reputations dt {
+  color: #ffffff !important;
+  font-size: .7rem !important;
+}
+
+.card-body > dl dd {
+  font-size: 1.0rem;
+  margin-bottom: 10px;
+}
+
+.professions dd {
+  margin-bottom: 5px !important;
+}
+
+.money > span::after {
+  background-size: 12px 12px;
+  content: "";
+  display: inline-block;
+  height: 12px;
+  margin-left: 2px;
+  width: 12px;
+}
+
+.gold::after {
+  background-image: url('/static/images/gold.png');
+}
+
+.silver::after {
+  background-image: url('/static/images/silver.png');
+}
+
+.copper::after {
+  background-image: url('/static/images/copper.png');
+}
+
+.professions .progress-bar, .reputations .progress-bar  {
+  background-color:#222222;
+  border: 1px solid #000000;
+  border-radius: 3px;
+  display: block;
+  height: 5px;
+  width: 140px;
+}
+
+.reputations .progress-bar  {
+  height: 15px;
+  margin: 5px 10px 5px 0;
+}
+
+.progress-bar .progress {
+  display: block;
+  height: 100%;
+}
+
+.professions .progress {
+  background: rgb(0,135,0);
+  background: linear-gradient(90deg, rgba(0,135,0,1) 0%, rgba(0,255,0,1) 50%, rgba(0,135,0,1) 100%);
+}
+
+.reputations dd {
+  align-items: center;
+  font-size: .8rem !important;
+}
+
+dd[class*="renown"] span, 
+dd.esteemed .progress,
+dd.maxiumum .progress,
+dd.exalted .progress,
+dd.exalted .progress
+{
+  background: rgb(0,140,220);
+  background: linear-gradient(90deg, rgba(0,140,220,1) 0%, rgba(165,222,255,1) 50%, rgba(0,140,220,1) 100%);
+}
+
+dd[class*="renown"],
+dd.esteemed,
+dd.maxiumum,
+dd.exalted,
+dd.exalted
+{
+  color: rgb(165,222,255);
+}
+
+dd.hated .progress,
+dd.hostile .progress,
+dd.unfriendly .progress
+{
+  background: rgb(175,50,0);
+  background: linear-gradient(90deg, rgba(175,50,0,1) 0%, rgba(255,73,0,1) 50%, rgba(175,50,0,1) 100%);
+}
+
+dd.unfriendly,
+dd.hostile,
+dd.unfriendly
+{
+  color: rgb(255,73,0);
+}
+
+dd.neutral .progress, 
+dd.low .progress, 
+dd.stranger .progress, 
+dd.preferred .progress, 
+dd.acquaintance .progress, 
+dd.empty .progress,
+dd.cohort .progress,
+dd.ally .progress
+{
+  background: rgb(255,255,0);
+  background: linear-gradient(90deg, rgba(255,255,0,1) 0%, rgba(255,255,194,1) 50%, rgba(255,255,0,1) 100%);
+}
+
+dd.neutral, 
+dd.low, 
+dd.stranger,
+dd.preferred, 
+dd.acquaintance, 
+dd.empty,
+dd.cohort,
+dd.ally
+{
+  color: rgb(255,255,194);
+}
+
+dd.friendly .progress, 
+dd.valued .progress, 
+dd.fang .progress, 
+dd.respected .progress, 
+dd.medium .progress, 
+dd.high .progress,
+dd.honored .progress,
+dd.revered .progress,
+dd.friend .progress
+{
+  background: rgb(0,112,24);
+  background: linear-gradient(90deg, rgba(0,112,24,1) 0%, rgba(0,255,55,1) 50%, rgba(0,112,24,1) 100%);
+}
+
+dd.friendly,
+dd.valued,
+dd.fang,
+dd.respected, 
+dd.medium, 
+dd.high,
+dd.honored,
+dd.revered,
+dd.friend
+{
+  color: rgb(0,255,55);
+}
+
+.card-footer {
+  bottom: 5px;
+  color: gray;
+  font-size: .7rem;
+  left: 5px;
+  position: absolute;
+}
+
+.icon {
+  padding: 0;
+}
+
+.alt-icons {
+  position: absolute;
+  right: 10px;
+  bottom: -20px;
+}
+
+.level-icon {
+  background-color: var(--bs-body-bg);
+  border: 4px solid #fff;
+  border-radius: 50%;
+  float: right;
+  font-size: 1.2rem;
+  font-weight: bold;
+  height: 32px;
+  line-height: 34px;
+  margin-left: 5px;
+  text-align: center;
+  width: 32px;
+  white-space: nowrap;
+}
+
+.class-icon {
+  float: right;
+  height: 40px;
+  margin-left: 5px;
+  width: 40px;
+}
+
+.faction-icon {
+  background-color: var(--bs-body-bg);
+  border: 4px solid #fff;
+  border-radius: 50%;
+  float: right;
+  height: 32px;
+  margin-left: 5px;
+  width: 32px;
+}
+
+.horde-icon {
+  border-color: var(--horde);
+}
+
+.alliance-icon {
+  border-color: var(--alliance);
+}
+
+.class-icon:hover, .faction-icon:hover {
+  filter: brightness(1.75) saturate(4);     
+}
+
+footer {
+  background-color: #222222;
+  border-top-left-radius: var(--bs-border-radius);
+  border-top-right-radius: var(--bs-border-radius);
+  margin-top: auto;
+  padding: 10px;
+}
