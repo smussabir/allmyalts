@@ -9,6 +9,7 @@ import configparser
 import gamedata
 import time
 from collections import deque
+import re
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -33,6 +34,9 @@ message_queue = deque()
 def send_sse_message(message):
     """Add a message to the global queue to be sent to the client via SSE."""
     message_queue.append(message)
+
+def contains_digit(s):
+    return any(char.isdigit() for char in s)
 
 @app.route('/updates')
 def updates():
@@ -130,52 +134,55 @@ def get_alts():
                 alt['gender'] = character['gender']['name']
                 alt['faction'] = character['faction']['name']
 
-                send_sse_message('Processing: ' + alt['name'] )
-
-                media = get_response('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '/character-media?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
-                if media:
-                    for asset in media['assets']:
-                        if asset['key'] == 'avatar':
-                            alt['avatar_image'] = asset['value']
-                        if asset['key'] == 'inset':
-                            alt['inset_image'] = asset['value']
-                        if asset['key'] == 'main-raw':
-                            alt['main_image'] = asset['value']
-                        # if asset['key'] == 'main':
-                        #     alt['main_image'] = asset['value']
-
                 alt['achievement_points'] = 0
                 alt['average_item_level'] = 0
                 alt['last_login'] = ''
-                data = get_response('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
-                if data:
-                    alt['achievement_points'] = data['achievement_points']
-                    alt['average_item_level'] = data['average_item_level']
-                    timestamp = data['last_login_timestamp']/1000
-                    alt['last_login'] = convert_timestamp(timestamp)
-                    if 'active_spec' in data:
-                        alt['spec'] = data['active_spec']['name']
-
                 alt['professions'] = ''
-                professions = []
-                professions_data = get_professions('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '/professions?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
-                if data:
-                    for profession in professions_data:
-                        alt_profession = {}
-                        alt_profession['name'] = profession['name']
-                        alt_profession['tier'] = profession['tier_name']
-                        alt_profession['skill_points'] = profession['skill_points']
-                        alt_profession['max_skill_points'] = profession['max_skill_points']
-                        professions.append(alt_profession)
-                    alt['professions'] = professions
-
-                data = get_response('https://us.api.blizzard.com/profile/user/wow/protected-character/' + str(alt['realm_id']) + '-' + str(alt['character_id']) + '?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
                 alt['gold'] = alt['silver'] = alt['copper'] = '0'
                 alt['location'] = ''
-                if data:
-                    total_money += data['money']
-                    alt['gold'], alt['silver'], alt['copper'] = convert_money(str(data['money']))
-                    alt['location'] = data['position']['zone']['name']
+
+                if alt['level'] >20 and not contains_digit(alt['name']):
+                    send_sse_message('Processing: ' + alt['name'] )
+
+
+                    media = get_response('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '/character-media?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
+                    if media:
+                        for asset in media['assets']:
+                            if asset['key'] == 'avatar':
+                                alt['avatar_image'] = asset['value']
+                            if asset['key'] == 'inset':
+                                alt['inset_image'] = asset['value']
+                            if asset['key'] == 'main-raw':
+                                alt['main_image'] = asset['value']
+                            # if asset['key'] == 'main':
+                            #     alt['main_image'] = asset['value']
+
+                    data = get_response('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
+                    if data:
+                        alt['achievement_points'] = data['achievement_points']
+                        alt['average_item_level'] = data['average_item_level']
+                        timestamp = data['last_login_timestamp']/1000
+                        alt['last_login'] = convert_timestamp(timestamp)
+                        if 'active_spec' in data:
+                            alt['spec'] = data['active_spec']['name']
+
+                    professions = []
+                    professions_data = get_professions('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '/professions?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
+                    if data:
+                        for profession in professions_data:
+                            alt_profession = {}
+                            alt_profession['name'] = profession['name']
+                            alt_profession['tier'] = profession['tier_name']
+                            alt_profession['skill_points'] = profession['skill_points']
+                            alt_profession['max_skill_points'] = profession['max_skill_points']
+                            professions.append(alt_profession)
+                        alt['professions'] = professions
+
+                    data = get_response('https://us.api.blizzard.com/profile/user/wow/protected-character/' + str(alt['realm_id']) + '-' + str(alt['character_id']) + '?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
+                    if data:
+                        total_money += data['money']
+                        alt['gold'], alt['silver'], alt['copper'] = convert_money(str(data['money']))
+                        alt['location'] = data['position']['zone']['name']
 
                 alts.append(alt)
         
