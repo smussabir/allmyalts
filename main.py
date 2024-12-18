@@ -153,6 +153,8 @@ def get_alts():
                     alt['average_item_level'] = data['average_item_level']
                     timestamp = data['last_login_timestamp']/1000
                     alt['last_login'] = convert_timestamp(timestamp)
+                    if 'active_spec' in data:
+                        alt['spec'] = data['active_spec']['name']
 
                 alt['professions'] = ''
                 professions = []
@@ -169,7 +171,7 @@ def get_alts():
 
                 data = get_response('https://us.api.blizzard.com/profile/user/wow/protected-character/' + str(alt['realm_id']) + '-' + str(alt['character_id']) + '?namespace=profile-us&locale=en_US&access_token=' + access_token, headers)
                 alt['gold'] = alt['silver'] = alt['copper'] = '0'
-                alt['location'] = 'unknown'
+                alt['location'] = ''
                 if data:
                     total_money += data['money']
                     alt['gold'], alt['silver'], alt['copper'] = convert_money(str(data['money']))
@@ -360,7 +362,7 @@ def convert_timestamp(timestamp):
     central = dt.astimezone(pytz.timezone('America/Chicago'))
 
     # format the datetime object as a string in the desired format
-    result = central.strftime('%a %d %b, %Y at %H:%M')
+    result = central.strftime('%Y-%m-%dT%H:%M:%S')
 
     return result
 

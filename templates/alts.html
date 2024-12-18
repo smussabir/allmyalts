@@ -17,24 +17,13 @@ ALLmyALTS - Alts
     </div>
 </section>
 <section class="main-content">
-    <div id="filter">
-        <!-- Sorting controls -->
-        <label for="sort-selector">Sort by:</label>
-        <select id="sort-selector">
-            <option value="level">Level</option>
-            <option value="name">Name</option>
-            <option value="class">Class</option>
-            <option value="average_item_level">Item Level</option>
-            <option value="gold">Gold</option>
-        </select>
-
-        <label for="sort-direction">Direction:</label>
-        <select id="sort-direction">
-            <option value="desc">Descending</option>
-            <option value="asc">Ascending</option>
-        </select>
+    <div id="controls" class="flex">
+        <div class="view-toggle">
+            <!-- Start with the card view by default, so the button shows the table icon -->
+            <button id="toggle-view"><i class="fa-solid fa-list-ul"></i></button>
+        </div>
     </div>
-    <div id="alts"></div>
+<div id="alts"></div>
 </section>    
 {% endblock %}
 {% block scripts %}

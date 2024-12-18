@@ -139,6 +139,7 @@ article.summary:hover, article.mount:hover {box-shadow: 0 0 40px 0 #ffffff;}
 
 html {
   scroll-behavior: smooth;
+  overflow-y: scroll;
 }
 
 html, body {
@@ -297,6 +298,51 @@ nav li {
   }  
 }
 
+#alts-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 5px;
+}
+
+#alts-table thead {
+  height: 30px;
+}
+
+#alts-table th, #alts-table td {
+  overflow: hidden;      /* Hide overflowing text */
+  text-overflow: ellipsis; /* Displays ... if text is truncated */
+  padding: 5px;
+}
+
+#alts-table th {
+  font-size: .9rem;
+  text-align: left;
+}
+
+#alts-table th i {
+  color: var(--accent);
+  margin-left: 5px;
+}
+
+#alts-table td {
+  /* border-bottom: 1px solid #ccc; */
+  font-size: .9rem;
+  padding: 10px;
+}
+
+#alts-table td .cell-text {
+  /* display: inline-block;
+  max-width: 250px; 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle; */
+}
+
+#alts-table tbody tr:nth-child(odd) {
+  background-color: var(--dark-bg)
+}
+
 article.summary {
   background-size: cover;
   background-repeat: no-repeat;
@@ -345,7 +391,7 @@ article.summary {
   align-items: center;
 }
 
-#filter {
+#controls {
   background-color: var(--accent);
   border-radius: var(--bs-border-radius);
   margin-bottom: 30px;
@@ -391,7 +437,7 @@ article.summary {
 }
 
 #filter .fa-solid {
-  color: #ffffff;
+  /* color: #ffffff; */
 }
 
 #filter button {
@@ -406,6 +452,18 @@ article.summary {
 
 .reset-filter:hover {
   transform: scale(1.4);
+}
+
+.view-toggle {
+  margin-left: auto;
+}
+
+.view-toggle button {
+  border: none; /* Removes the border */
+  outline: none; /* Removes the focus outline */
+  background: transparent; /* Optional: makes the background transparent */
+  color: #FFF;
+  font-size: 1.5rem;
 }
 
 .note {
