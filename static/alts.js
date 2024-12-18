@@ -95,17 +95,12 @@ $(document).ready(function() {
         });
 
 
-        $(document).on('click', '.icon', function() {
-        // Filter functionality (unchanged)
-        // $('.icon').on("click", function() {
-            // Hide all articles
-            $('#alts > article').hide();
-        
+        $(document).on('click', '.icon', function () {
             // Get the filter value from the clicked icon
-            const altFilter = '.' + $(this).attr("data-filter");
+            const altFilter = '.' + $(this).attr('data-filter');
         
             // Retrieve existing filters from localStorage or initialize an empty array
-            let filters = JSON.parse(localStorage.getItem("altFilters")) || [];
+            let filters = JSON.parse(localStorage.getItem('altFilters')) || [];
         
             // Add or remove the clicked filter
             const filterIndex = filters.indexOf(altFilter);
@@ -117,14 +112,25 @@ $(document).ready(function() {
         
             // Apply filters or show all articles if no filters remain
             if (filters.length > 0) {
-                localStorage.setItem("altFilters", JSON.stringify(filters));
+                localStorage.setItem('altFilters', JSON.stringify(filters));
         
                 // Build a compound selector for all active filters
-                const compoundFilter = filters.join('');
-                $('#alts > article').filter(compoundFilter).fadeIn(1000);
+                const compoundFilter = filters.join(',');
+        
+                // Show filtered elements with fadeIn, and hide non-matching elements
+                $('#alts > article').each(function () {
+                    const $article = $(this);
+                    if ($article.is(compoundFilter)) {
+                        $article.stop(true, true).fadeIn(2000); // Show with fade-in
+                    } else {
+                        $article.stop(true, true).fadeOut(200); // Hide quickly
+                    }
+                });
             } else {
-                localStorage.removeItem("altFilters");
-                $('#alts > article').fadeIn(1000); // Show all articles
+                localStorage.removeItem('altFilters');
+        
+                // No filters active, show all articles with fadeIn
+                $('#alts > article').stop(true, true).fadeIn(2000);
             }
         });
         
