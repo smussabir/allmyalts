@@ -24,9 +24,6 @@ $(document).ready(function() {
             $('.load-timer').html(mins + 'm' + ' ' + secs + 's');
         }
 
-        // Progress bar: fake until done
-        var progressPercent = Math.min((secs / maxWait) * 100, 99);
-        $('.progress-bar').css('width', progressPercent + '%');
     },1000);
 
     // SSE for status updates
@@ -334,6 +331,8 @@ function createCard(alt) {
                 <dd>${ alt.realm }</dd>
                 <dt>Gender Race</dt>
                 <dd>${ alt.gender } ${ alt.race }</dd>
+                <dt>Spec</dt>
+                <dd>${ alt.spec }</dd>
                 <dt>Class</dt>
                 <dd>${ alt.class }</dd>
                 <dt>Achievement Points</dt>

@@ -54,8 +54,6 @@ table {
   --accent: #ec008c;
   --dark-bg: #222222;
 
-
-
   --deathknight: #C41F3B;
   --demonhunter: #A330C9;
   --druid: #FF7D0A;
@@ -71,6 +69,22 @@ table {
   --warrior: #C79C6E;
   --horde: #82161d;
   --alliance: #00aeef;
+
+   /* Blue range for renown / paragon (esteemed) */
+   --color-esteemed-start: #303f9f;
+   --color-esteemed-mid: #7785d5;
+ 
+   /* Red/Orange range for negative */
+   --color-negative-start: #d32f2f;
+   --color-negative-mid: #ea7a7a;
+ 
+   /* Yellow/Gray range for neutral */
+   --color-neutral-start: #757575;
+   --color-neutral-mid: #a8a8a8;
+ 
+   /* Green range for positive */
+   --color-positive-start: #388e3c;
+   --color-positive-mid: #7bd57e;
 }
 
 .flex {
@@ -245,14 +259,7 @@ nav li {
   margin-bottom: 35px;
   position: relative;
   transition: 0.3s;
-  display: n;
-}
-
-#rares .card {
-  margin-bottom: 10px;
-  border-radius: var(--bs-border-radius);
-  border-width: 0;
-  overflow: hidden;
+  display: none;
 }
 
 @media (max-width: 480px) {
@@ -291,10 +298,11 @@ nav li {
     min-height: 500px;
   }
   #reps .card {
-    background-size: 350%;
-    background-position-x: center;
+    background-size: 125%;
+    background-position-x: 50px;
+    background-position-y: bottom;
+    background-repeat: no-repeat;
     min-height: 500px;
-    background: none;
   }  
 }
 
@@ -370,6 +378,10 @@ article.summary {
 .card-img-top > img:hover {
   transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
 }
+#reps .card {
+  background-color: var(--dark-bg);; /* a neutral gray */
+  background-blend-mode: luminosity; /* or saturation */
+}
 
 #alts .card-body, #reps .card-body  {
   background-color: rgba(0, 0, 0, 0.5);
@@ -380,7 +392,7 @@ article.summary {
 }
 
 #reps .card-body {
-  background-color: var(--dark-bg);
+  /* background-color: var(--dark-bg); */
   align-items: center;
   width: 100%;
 }
@@ -410,6 +422,7 @@ article.summary {
   border: none;
   border-radius: var(--bs-border-radius);
   color: var(--dark-bg);
+  font-family: 'Roboto', sans-serif;
   font-size: 1.2rem;
   margin-right: 10px;
   padding: 0 5px;
@@ -598,7 +611,6 @@ article.summary {
 }
 
 .reputations .progress-bar  {
-  height: 15px;
   margin: 5px 10px 5px 0;
 }
 
@@ -617,90 +629,57 @@ article.summary {
   font-size: .8rem !important;
 }
 
-dd[class*="renown"] span, 
-dd.esteemed .progress,
-dd.maxiumum .progress,
-dd.exalted .progress,
-dd.exalted .progress
-{
-  background: rgb(0,140,220);
-  background: linear-gradient(90deg, rgba(0,140,220,1) 0%, rgba(165,222,255,1) 50%, rgba(0,140,220,1) 100%);
+/* Esteemed (e.g., exalted, maximum, cordially appreciative, renown states) */
+.esteemed .progress {
+  background: linear-gradient(
+    90deg,
+    var(--color-esteemed-start) 0%,
+    var(--color-esteemed-mid) 50%,
+    var(--color-esteemed-start) 100%
+  );
+}
+.esteemed {
+  color: var(--color-esteemed-mid);
 }
 
-dd[class*="renown"],
-dd.esteemed,
-dd.maxiumum,
-dd.exalted,
-dd.exalted
-{
-  color: rgb(165,222,255);
+/* Negative (e.g., hated, hostile, unfriendly) */
+.negative .progress {
+  background: linear-gradient(
+    90deg,
+    var(--color-negative-start) 0%,
+    var(--color-negative-mid) 50%,
+    var(--color-negative-start) 100%
+  );
+}
+.negative {
+  color: var(--color-negative-mid);
 }
 
-dd.hated .progress,
-dd.hostile .progress,
-dd.unfriendly .progress
-{
-  background: rgb(175,50,0);
-  background: linear-gradient(90deg, rgba(175,50,0,1) 0%, rgba(255,73,0,1) 50%, rgba(175,50,0,1) 100%);
+/* Neutral (e.g., neutral, low, stranger, preferred, acquaintance, empty, cohort, tentative, ambivalent, ally) */
+.neutral .progress {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-start) 0%,
+    var(--color-neutral-mid) 50%,
+    var(--color-neutral-start) 100%
+  );
+}
+.neutral {
+  color: var(--color-neutral-mid);
 }
 
-dd.unfriendly,
-dd.hostile,
-dd.unfriendly
-{
-  color: rgb(255,73,0);
+/* Positive (e.g., friendly, valued, fang, respected, medium, high, honored, revered, friend) */
+.positive .progress {
+  background: linear-gradient(
+    90deg,
+    var(--color-positive-start) 0%,
+    var(--color-positive-mid) 50%,
+    var(--color-positive-start) 100%
+  );
 }
 
-dd.neutral .progress, 
-dd.low .progress, 
-dd.stranger .progress, 
-dd.preferred .progress, 
-dd.acquaintance .progress, 
-dd.empty .progress,
-dd.cohort .progress,
-dd.ally .progress
-{
-  background: rgb(255,255,0);
-  background: linear-gradient(90deg, rgba(255,255,0,1) 0%, rgba(255,255,194,1) 50%, rgba(255,255,0,1) 100%);
-}
-
-dd.neutral, 
-dd.low, 
-dd.stranger,
-dd.preferred, 
-dd.acquaintance, 
-dd.empty,
-dd.cohort,
-dd.ally
-{
-  color: rgb(255,255,194);
-}
-
-dd.friendly .progress, 
-dd.valued .progress, 
-dd.fang .progress, 
-dd.respected .progress, 
-dd.medium .progress, 
-dd.high .progress,
-dd.honored .progress,
-dd.revered .progress,
-dd.friend .progress
-{
-  background: rgb(0,112,24);
-  background: linear-gradient(90deg, rgba(0,112,24,1) 0%, rgba(0,255,55,1) 50%, rgba(0,112,24,1) 100%);
-}
-
-dd.friendly,
-dd.valued,
-dd.fang,
-dd.respected, 
-dd.medium, 
-dd.high,
-dd.honored,
-dd.revered,
-dd.friend
-{
-  color: rgb(0,255,55);
+.positive {
+  color: var(--color-positive-mid);
 }
 
 .card-footer {
