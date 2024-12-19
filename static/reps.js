@@ -69,13 +69,22 @@ $(document).ready(function () {
             .done(function (response) {
                 var totalTime = Date.now() - ajaxTime;
                 console.log("Total time:", totalTime);
-
-                // Stop the timer once data is fetched
-                stopTimer();
-
+            
                 alts = response;
+            
+                // Sort by level descending, then by name ascending
+                alts.sort(function(a, b) {
+                    // First, compare by level (descending)
+                    const levelComparison = b.level - a.level;
+                    if (levelComparison !== 0) {
+                        return levelComparison;
+                    }
+                    // If levels are the same, compare by name (ascending)
+                    return a.name.localeCompare(b.name);
+                });
+            
                 $('#reps').hide().empty();
-
+            
                 // Render cards
                 $.each(alts, function (i, alt) {
                     if (alt.reps.length > 0) {
@@ -83,7 +92,7 @@ $(document).ready(function () {
                         $(card).appendTo('#reps').hide();
                     }
                 });
-
+            
                 // Display content
                 $('#loader').fadeOut(1000);
                 $('.loader-content').hide();

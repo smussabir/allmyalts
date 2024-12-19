@@ -250,8 +250,17 @@ function renderTableView() {
             altSpec = alt.spec.toLowerCase().replace(' ', '');
         }
         let altFaction = alt.faction.toLowerCase();
-        let goldFormatted = Intl.NumberFormat().format(alt.gold) + 'g ' + alt.silver + 's ' + alt.copper + 'c';
-        let formattedLastLogin = formatLastLogin(alt.last_login);
+        let altMoney = '';
+        if (alt.gold > 0) {
+            altMoney += `<span class="gold">${ Intl.NumberFormat().format(alt.gold) }</span>`;
+        } 
+        if (alt.silver > 0) {
+            altMoney += `<span class="silver">${ alt.silver }</span>`;
+        } 
+        if (alt.copper > 0) {
+            altMoney += `<span class="copper">${ alt.copper }</span>`;
+        } 
+            let formattedLastLogin = formatLastLogin(alt.last_login);
         if (formattedLastLogin == 'Invalid Date') {
             formattedLastLogin = '';
         }
@@ -266,7 +275,7 @@ function renderTableView() {
                 <td>${alt.level}</td>
                 <td>${alt.achievement_points}</td>
                 <td>${alt.average_item_level}</td>
-                <td class="money"><span class="gold">${ Intl.NumberFormat().format(alt.gold) }</span> <span class="silver">${ alt.silver }</span> <span class="copper">${ alt.copper }</span></td>
+                <td class="money">${ altMoney }</td>
                 <td>${alt.location}</td>
                 <td>${formattedLastLogin}</td>
             </tr>
@@ -322,6 +331,17 @@ function createCard(alt) {
         formattedLastLogin = '';
     }
 
+    let altMoney = '';
+    if (alt.gold > 0) {
+        altMoney += `<span class="gold">${ Intl.NumberFormat().format(alt.gold) }</span>`;
+    } 
+    if (alt.silver > 0) {
+        altMoney += `<span class="silver">${ alt.silver }</span>`;
+    } 
+    if (alt.copper > 0) {
+        altMoney += `<span class="copper">${ alt.copper }</span>`;
+    } 
+
     let card = `
     <article class="alt card ${altClass} ${altFaction}" style="background-image: url('${alt.main_image}')">    
         <div class="card-body">
@@ -342,7 +362,7 @@ function createCard(alt) {
             </dl>
             <dl>
                 <dt>Gold</dt>
-                <dd class="money"><span class="gold">${ Intl.NumberFormat().format(alt.gold) }</span> <span class="silver">${ alt.silver }</span> <span class="copper">${ alt.copper }</span></dd>
+                <dd class="money">${ altMoney }</dd>
                 <dt>Location</dt>
                 <dd>${ altLocation }</dd>
             </dl>
