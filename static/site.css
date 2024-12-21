@@ -180,7 +180,6 @@ body {
 header {
   background-color: var(--dark-bg);
   align-items: center;
-  margin-bottom: 45px;
   padding: 10px;
   border-bottom-left-radius: var(--bs-border-radius);
   border-bottom-right-radius: var(--bs-border-radius);
@@ -416,36 +415,83 @@ article.summary {
   transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
 }
 
-
+/* The overlay covers the entire screen */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
+  /* fill entire screen */
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.7); /* dim background */
+  background-color: rgba(0,0,0,0.8); /* dim background */
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999; /* ensure it’s on top */
+  z-index: 9999;
 }
 
+/* The modal-window is sized within the overlay */
 .modal-window {
-  background: #fff;
-  border-radius: 5px;
-  width: 60%;
-  max-width: 700px;
-  padding: 20px;
+  background: none;
+  width: 70%;      /* or any desired width */
+  height: 45%;     /* or any desired height */
+  display: flex;
+  flex-direction: column; /* so content can stretch */
+  position: relative;
+  /* overflow: hidden;        hide scrollbars, if desired */
+}
+
+/* The .modal-content takes up remaining space in the .modal-window */
+.modal-content {
+  flex: 1; /* let it grow and fill vertical space */
+  display: flex;
+  flex-direction: column;
+}
+
+/* #modal-body also stretches to fill, if you have additional elements in .modal-content */
+#modal-body {
+  flex: 1;
+  /* overflow: auto; scroll if content is too tall */
+  display: flex;
+  flex-direction: column;
   position: relative;
 }
 
+#modal-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* so clicks pass through to underlying content */
+  z-index: 1;           /* behind or in front of content? tweak as needed */
+}
+
+/* Finally, ensure .alt-detail can fill the space inside #modal-body */
+.alt-detail {
+  flex: 1;
+  /* optionally ensure it has any layout specifics:
+     e.g. background-size, padding, or no overflow */
+  display: flex;
+  flex-direction: column;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  padding: 20px 40px;
+}
+
+/* Example close button (optional) */
 .modal-close {
   position: absolute;
-  top: 10px;
-  right: 15px;
+  top: -1.5rem;
+  right: -1.5rem;
   cursor: pointer;
-  font-size: 1.5rem;
-  color: #333;
+  font-size: 3rem;
+  color:var(--accent);
+  z-index: 9999;
 }
 
 #reps .card {
@@ -471,6 +517,167 @@ article.summary {
   background-color: var(--dark-bg);
   /* width: calc(100% - 20px); */
   align-items: center;
+}
+
+
+.alt-detail::before {
+  content: "";
+  position: absolute;
+  /* inset: 0 is shorthand for top:0; right:0; bottom:0; left:0; */
+  inset: 0;
+  background-position: center;
+  background-size: auto;
+  background-repeat: no-repeat;
+  top: -135px;
+
+  /* Example filter: reduce saturation to 50% 
+     Adjust or remove as desired */
+  filter: saturate(30%);
+
+  z-index: -1; /* keeps the pseudo-element behind alt-detail’s content */
+}
+
+.alt-detail.deathknight::before {
+  background-image: url('/static/images/bg/deathknight.webp');
+}
+
+.alt-detail.demonhunter::before {
+  background-image: url('/static/images/bg/demonhunter.webp');
+}
+
+.alt-detail.druid::before {
+  background-image: url('/static/images/bg/druid.webp');
+}
+
+.alt-detail.evoker::before {
+  background-image: url('/static/images/bg/evoker.webp');
+}
+
+.alt-detail.hunter::before {
+  background-image: url('/static/images/bg/hunter.webp');
+}
+
+.alt-detail.mage::before {
+  background-image: url('/static/images/bg/mage.webp');
+}
+
+.alt-detail.monk::before {
+  background-image: url('/static/images/bg/monk.webp');
+}
+
+.alt-detail.paladin::before {
+  background-image: url('/static/images/bg/paladin.webp');
+}
+
+.alt-detail.priest::before {
+  background-image: url('/static/images/bg/priest.webp');
+}
+
+.alt-detail.rogue::before {
+  background-image: url('/static/images/bg/rogue.webp');
+}
+
+.alt-detail.shaman::before {
+  background-image: url('/static/images/bg/shaman.webp');
+}
+
+.alt-detail.warlock::before {
+  background-image: url('/static/images/bg/warlock.webp');
+}
+
+.alt-detail.warrior::before {
+  background-image: url('/static/images/bg/warrior.webp');
+}
+
+.alt-detail header {
+  background: none;
+  padding-left: 130px;
+  /* Enable grid layout with two columns */
+  display: grid;
+  grid-template-columns: auto 1fr;
+  color: #fff;
+  font-family: "Kanit", serif;
+  font-weight: 700;
+  font-style: normal;
+  inset: 0;
+  background-position: left;
+  background-size: 125px;
+  background-repeat: no-repeat;
+  position: relative;  /* create a positioned container */
+}
+
+.alt-detail .container {
+  min-height: auto;
+  overflow: hidden;
+  height: auto;
+}
+
+.alt-detail .container img {
+  position: absolute;
+  right: -125px;
+  top: -120px;
+}
+
+.alt-detail header.alliance {
+  background-image: url('/static/images/alliance.png');
+}
+
+.alt-detail header.horde {
+  background-image: url('/static/images/horde.png');
+}
+
+/* h1 -> row 1, col 1 */
+.alt-detail header h1 {
+  grid-row: 1;    /* first row */
+  grid-column: 1; /* first column */
+}
+
+/* h3 -> row 1, col 2 */
+.alt-detail header h3 {
+  grid-row: 1; 
+  grid-column: 2; 
+  border-left: 1px solid #fff;
+}
+
+/* h2 -> row 2, col 1 */
+.alt-detail header h2 {
+  grid-row: 2; 
+  grid-column: 1;
+}
+
+/* h4 -> row 2, col 2 */
+.alt-detail header h4 {
+  grid-row: 2; 
+  grid-column: 2;
+  border-left: 1px solid #fff;
+}
+
+.alt-detail header h1 {
+  font-size: 4rem;
+  text-transform: uppercase;
+}
+
+.alt-detail header h2 {
+  font-size: 1.5rem;
+  margin-top: -5px;
+}
+
+.alt-detail header h3 {
+  font-size: 1.4rem;
+  margin-left: 45px;
+  padding-left: 45px;
+}
+
+.alt-detail header h3 span {
+  font-size: 2rem;
+}
+
+.alt-detail header h4 {
+  margin-left: 45px;
+  padding-left: 45px;
+  margin-top: -30px;
+  font-size: 2rem;
+  text-transform: uppercase;
 }
 
 #controls {
@@ -820,4 +1027,43 @@ footer {
   border-top-right-radius: var(--bs-border-radius);
   margin-top: auto;
   padding: 10px;
+}
+
+
+/* 1. Define the animation */
+@keyframes skewAndUnskew {
+  0% {
+    transform: scale(1.1); /* Scales uniformly */  }
+  10% {
+    transform: translate(1px, 0px);
+  }
+  20% {
+    transform: skew(0deg);
+  }
+  50% {
+    transform: skew(0deg);
+  }
+  70% {
+    transform: translate(-1px, 0px);
+  }
+  80% {
+    transform: skew(0deg);
+  }
+  100% {
+    transform: skew(0deg);
+    transform: scale(1); /* Scales uniformly */  }
+  }
+}
+
+/* 2. Apply the animation to the element */
+.image-skew {
+  /* Set transform-origin if needed to control skew pivot */
+  transform-origin: center center;
+
+  /* 
+     Duration: 30s 
+     Iteration: infinite
+     Timing function: ease-in-out for smoothness 
+  */
+  animation: skewAndUnskew 30s ease-in-out infinite;
 }

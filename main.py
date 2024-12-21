@@ -135,7 +135,7 @@ def callback():
 
 @app.route('/alts')
 def alts():
-    return render_template("alts.html", navbar=True)
+    return render_template("alts.html", navbar=True, loader=True)
 
 @app.route('/alt_detail')
 def alt_detail():
@@ -145,11 +145,7 @@ def alt_detail():
 
 @app.route('/reps')
 def reps():
-    return render_template("reps.html", navbar=True)
-
-@app.route('/info')
-def info():
-    return render_template("info.html", navbar=True)
+    return render_template("reps.html", navbar=True, loader=True)
 
 ##
 # get_alts
@@ -159,18 +155,25 @@ def info():
 def get_alts():
     print('Starting /get_alts')
     if request.method == 'POST':
-        # OAuth token
-        access_token = session.get('battlenet_token')
-        headers = {'Authorization': f'Bearer {access_token}'}
-
+        # Check user info
         send_sse_message('Getting user info')
-        user_info = get_response('https://oauth.battle.net/userinfo', headers)
-        battletag = user_info['battletag']
+        user_info = blizzard_api_request('https://oauth.battle.net/userinfo')
+        if isinstance(user_info, dict) and 'battletag' in user_info:
+            battletag = user_info['battletag']
+        else:
+            # If user_info is a redirect, just return it; or handle the fallback
+            return user_info
 
         print('/get_alts: character data')
         send_sse_message('Building list of characters')
         start = time.time()
-        character_data = get_response('https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US', headers)
+
+        # Retrieve character data via our new helper
+        character_data = blizzard_api_request('https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US')
+        if not isinstance(character_data, dict):
+            # Possibly a redirect
+            return character_data
+
         end = time.time()
         elapsed = end - start
         print('/get_alts: character data returned')
@@ -185,7 +188,7 @@ def get_alts():
 
         start = time.time()
 
-        for account in character_data['wow_accounts']:
+        for account in character_data.get('wow_accounts', []):
             number_alts += len(account['characters'])
             for character in account['characters']:
                 alt = {
@@ -215,12 +218,10 @@ def get_alts():
                     send_sse_message('Processing: ' + alt['name'])
 
                     # Character media
-                    media = get_response(
-                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/character-media?namespace=profile-us&locale=en_US",
-                        headers
-                    )
-                    if media:
-                        for asset in media['assets']:
+                    media_url = f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/character-media?namespace=profile-us&locale=en_US"
+                    media = blizzard_api_request(media_url)
+                    if isinstance(media, dict):
+                        for asset in media.get('assets', []):
                             cached_url = f"/cached-image?url={quote_plus(asset['value'])}"
                             if asset['key'] == 'avatar':
                                 alt['avatar_image'] = cached_url
@@ -230,41 +231,35 @@ def get_alts():
                                 alt['main_image'] = cached_url
 
                     # Character profile summary
-                    data = get_response(
-                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}?namespace=profile-us&locale=en_US",
-                        headers
-                    )
-                    if data:
-                        alt['achievement_points'] = data['achievement_points']
-                        alt['average_item_level'] = data['average_item_level']
-                        timestamp = data['last_login_timestamp'] / 1000
+                    char_profile_url = f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}?namespace=profile-us&locale=en_US"
+                    data = blizzard_api_request(char_profile_url)
+                    if isinstance(data, dict):
+                        alt['achievement_points'] = data.get('achievement_points', 0)
+                        alt['average_item_level'] = data.get('average_item_level', 0)
+                        timestamp = data.get('last_login_timestamp', 0) / 1000
                         alt['last_login'] = convert_timestamp(timestamp)
                         if 'active_spec' in data:
                             alt['spec'] = data['active_spec']['name']
 
                     # Professions
-                    professions_data = get_professions(
-                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/professions?namespace=profile-us&locale=en_US",
-                        headers
-                    )
-                    if data and professions_data:
+                    prof_url = f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/professions?namespace=profile-us&locale=en_US"
+                    professions_data = blizzard_api_request(prof_url)
+                    if isinstance(professions_data, dict) and 'primaries' in professions_data:
                         prof_list = []
-                        for prof in professions_data:
+                        for prof in professions_data['primaries']:
                             prof_dict = {
-                                'name': prof['name'],
-                                'tier': prof['tier_name'],
-                                'skill_points': prof['skill_points'],
-                                'max_skill_points': prof['max_skill_points']
+                                'name': prof['profession']['name'],
+                                'tier': prof['tiers'][-1]['tier']['name'],
+                                'skill_points': prof['tiers'][-1]['skill_points'],
+                                'max_skill_points': prof['tiers'][-1]['max_skill_points']
                             }
                             prof_list.append(prof_dict)
                         alt['professions'] = prof_list
 
                     # Protected character info (money, location)
-                    data = get_response(
-                        f"https://us.api.blizzard.com/profile/user/wow/protected-character/{alt['realm_id']}-{alt['character_id']}?namespace=profile-us&locale=en_US",
-                        headers
-                    )
-                    if data:
+                    prot_char_url = f"https://us.api.blizzard.com/profile/user/wow/protected-character/{alt['realm_id']}-{alt['character_id']}?namespace=profile-us&locale=en_US"
+                    data = blizzard_api_request(prot_char_url)
+                    if isinstance(data, dict) and 'money' in data:
                         total_money += data['money']
                         alt['gold'], alt['silver'], alt['copper'] = convert_money(str(data['money']))
                         alt['location'] = data['position']['zone']['name']
@@ -279,7 +274,7 @@ def get_alts():
 
         alts.sort(key=lambda x: (x['account_id'], x['level'], x['name']))
         summary = {
-            'accounts': len(character_data['wow_accounts']),
+            'accounts': len(character_data.get('wow_accounts', [])),
             'number_alts': number_alts,
             'battletag': battletag
         }
@@ -293,49 +288,48 @@ def get_alts():
 @app.route('/get_reps', methods=['POST'])
 def get_reps():
     if request.method == 'POST':
-        access_token = session.get('battlenet_token')
-        headers = {'Authorization': f'Bearer {access_token}'}
         expansion_id = request.json.get('expansion_id', 2569)
 
         send_sse_message('Getting factions for xpac')
-        xpac_factions = get_response(
-            f"https://us.api.blizzard.com/data/wow/reputation-faction/{expansion_id}?namespace=static-us&locale=en_US",
-            headers
-        )
+        xpac_url = f"https://us.api.blizzard.com/data/wow/reputation-faction/{expansion_id}?namespace=static-us&locale=en_US"
+        xpac_factions = blizzard_api_request(xpac_url)
+        if not isinstance(xpac_factions, dict) or 'name' not in xpac_factions:
+            return xpac_factions  # Possibly a redirect
+
         xpac_name = xpac_factions['name']
         send_sse_message('Getting factions for ' + xpac_name)
-        factions_by_id = {f["id"]: f for f in xpac_factions["factions"]}
+        factions_by_id = {f["id"]: f for f in xpac_factions.get("factions", [])}
 
         # Enrich faction data
         for faction_id, faction_data in factions_by_id.items():
-            faction_details = get_faction_details(faction_id, headers)
-            if "renown_tiers" in faction_details:
-                faction_data["renown_tiers"] = faction_details["renown_tiers"]
-                faction_data["max_renown_level"] = len(faction_details["renown_tiers"])
-            else:
-                faction_data["max_renown_level"] = None
-            if "description" in faction_details:
-                faction_data["description"] = faction_details["description"]
-            if "can_paragon" in faction_details:
-                faction_data["can_paragon"] = faction_details["can_paragon"]
-            if "is_renown" in faction_details:
-                faction_data["is_renown"] = faction_details["is_renown"]
+            faction_details = blizzard_api_request(
+                f"https://us.api.blizzard.com/data/wow/reputation-faction/{faction_id}?namespace=static-us&locale=en_US"
+            )
+            if isinstance(faction_details, dict):
+                if "renown_tiers" in faction_details:
+                    faction_data["renown_tiers"] = faction_details["renown_tiers"]
+                    faction_data["max_renown_level"] = len(faction_details["renown_tiers"])
+                else:
+                    faction_data["max_renown_level"] = None
+                faction_data["description"] = faction_details.get("description", "")
+                faction_data["can_paragon"] = faction_details.get("can_paragon", False)
+                faction_data["is_renown"] = faction_details.get("is_renown", False)
 
-        # Get user info
         send_sse_message('Getting user info')
-        user_info = get_response(
-            f"https://oauth.battle.net/userinfo?access_token={access_token}",
-            ""
-        )
+        user_info = blizzard_api_request("https://oauth.battle.net/userinfo")
+        if not isinstance(user_info, dict) or 'battletag' not in user_info:
+            return user_info
         battletag = user_info['battletag']
 
-        character_data = get_response(
-            f"https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US",
-            headers
+        character_data = blizzard_api_request(
+            "https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US"
         )
+        if not isinstance(character_data, dict):
+            return character_data
+
         alts = []
 
-        for account in character_data['wow_accounts']:
+        for account in character_data.get('wow_accounts', []):
             for character in account['characters']:
                 if character['level'] > 60 and not contains_digit(character['name']):
                     alt = {
@@ -352,41 +346,39 @@ def get_reps():
 
                     # Get reps
                     send_sse_message('Getting rep data for ' + character['name'])
-                    reps_data = get_response(
-                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/reputations?namespace=profile-us&locale=en_US",
-                        headers
+                    reps_data = blizzard_api_request(
+                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/reputations?namespace=profile-us&locale=en_US"
                     )
                     reps = []
-                    for item in reps_data['reputations']:
-                        if item['faction']['id'] in factions_by_id:
-                            faction_data = factions_by_id[item['faction']['id']]
-                            rep = {
-                                'faction_name': item['faction']['name'],
-                                'faction_id': item['faction']['id'],
-                                'raw': item['standing']['raw'],
-                                'value': item['standing']['value'],
-                                'max': item['standing']['max'],
-                                'tier': item['standing'].get('tier', ''),
-                                'renown_level': item['standing'].get('renown_level', ''),
-                                'standing_name': item['standing']['name'],
-                                'is_renown': faction_data.get('is_renown', False),
-                                'max_renown_level': faction_data.get('max_renown_level', None),
-                                'can_paragon': faction_data.get('can_paragon', False),
-                                'description': faction_data.get('description', ''),
-                                'renown_tiers': faction_data.get('renown_tiers', [])
-                            }
-                            reps.append(rep)
-
+                    if isinstance(reps_data, dict) and 'reputations' in reps_data:
+                        for item in reps_data['reputations']:
+                            if item['faction']['id'] in factions_by_id:
+                                faction_data = factions_by_id[item['faction']['id']]
+                                standing = item['standing']
+                                rep = {
+                                    'faction_name': item['faction']['name'],
+                                    'faction_id': item['faction']['id'],
+                                    'raw': standing['raw'],
+                                    'value': standing['value'],
+                                    'max': standing['max'],
+                                    'tier': standing.get('tier', ''),
+                                    'renown_level': standing.get('renown_level', ''),
+                                    'standing_name': standing['name'],
+                                    'is_renown': faction_data.get('is_renown', False),
+                                    'max_renown_level': faction_data.get('max_renown_level', None),
+                                    'can_paragon': faction_data.get('can_paragon', False),
+                                    'description': faction_data.get('description', ''),
+                                    'renown_tiers': faction_data.get('renown_tiers', [])
+                                }
+                                reps.append(rep)
                     alt['reps'] = reps
 
                     # Get media
                     send_sse_message('Getting media data for ' + character['name'])
-                    media = get_response(
-                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/character-media?namespace=profile-us&locale=en_US",
-                        headers
-                    )
-                    if media:
-                        for asset in media['assets']:
+                    media_url = f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/character-media?namespace=profile-us&locale=en_US"
+                    media = blizzard_api_request(media_url)
+                    if isinstance(media, dict):
+                        for asset in media.get('assets', []):
                             cached_url = f"/cached-image?url={quote_plus(asset['value'])}"
                             if asset['key'] == 'avatar':
                                 alt['avatar_image'] = cached_url
@@ -396,12 +388,11 @@ def get_reps():
                                 alt['main_image'] = cached_url
 
                     # Additional character info
-                    profile_summary = get_response(
-                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}?namespace=profile-us&locale=en_US",
-                        headers
-                    )
-                    timestamp = profile_summary['last_login_timestamp'] / 1000
-                    alt['last_login'] = convert_timestamp(timestamp)
+                    profile_url = f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}?namespace=profile-us&locale=en_US"
+                    profile_summary = blizzard_api_request(profile_url)
+                    if isinstance(profile_summary, dict):
+                        timestamp = profile_summary.get('last_login_timestamp', 0) / 1000
+                        alt['last_login'] = convert_timestamp(timestamp)
 
                     alts.append(alt)
 
@@ -417,15 +408,50 @@ def get_alt_detail():
     if request.method == 'POST':
         altName = request.json.get('name', '')
         altRealm = request.json.get('realm', '')
-        sample_html = f"""
-            <h1>Details for {altName} on {altRealm}</h1>
-            <p>This is some sample HTML content to test the modal display.</p>
-            <ul>
-                <li>Item 1</li>
-                <li>Item 2</li>
-            </ul>
-        """
-        return jsonify({'html': sample_html})
+
+        # Character profile summary
+        char_url = f"https://us.api.blizzard.com/profile/wow/character/{altRealm.lower()}/{altName.lower()}?namespace=profile-us&locale=en_US"
+        alt = blizzard_api_request(char_url)
+        if isinstance(alt, dict):
+            faction = alt['faction']['name']
+            guild = alt['guild']['name'] if 'guild' in alt else ''
+            average_item_level = alt['average_item_level']
+            level = alt['level']
+            race = alt['race']['name']
+            spec = alt['active_spec']['name'] if 'active_spec' in alt else ''
+            altClass = alt['character_class']['name']
+
+            achievement_points = alt['achievement_points']
+            timestamp = alt['last_login_timestamp'] / 1000
+            last_login = convert_timestamp(timestamp)
+
+            # Get media
+            send_sse_message('Getting media data for ' + altName)
+            media_url = f"https://us.api.blizzard.com/profile/wow/character/{altRealm.lower()}/{altName.lower()}/character-media?namespace=profile-us&locale=en_US"
+            media = blizzard_api_request(media_url)
+            main_image = ""
+            if isinstance(media, dict):
+                for asset in media.get('assets', []):
+                    cached_url = f"/cached-image?url={quote_plus(asset['value'])}"
+                    if asset['key'] == 'main-raw':
+                        main_image = cached_url
+
+            detail = f"""
+                <article class='alt-detail {altClass.lower().replace(" ", "")}'>
+                    <header class='{faction.lower()}'>
+                        <h1>{altName}</h1>
+                        <h2>{guild}</h2>
+                        <h3><span class='{altClass.lower().replace(" ", "")}'>{average_item_level}</span> ilvl</h3>
+                        <h4>{level} {race} <span class='{altClass.lower().replace(" ", "")}'>{spec}</span> {altClass}</h4>
+                    </header>
+                    <div class='container'>
+                        <img src='{main_image}' class='image-skew' />
+                    </div>
+                </article>
+            """
+            return jsonify({'html': detail})
+        else:
+            return alt  # Possibly a redirect if token expired, etc.
 
 ##
 # Helper Functions
@@ -443,9 +469,11 @@ def convert_money(money):
     return gold, silver, copper
 
 def get_professions(url, headers):
+    # This is now replaced by direct calls to blizzard_api_request, but
+    # if you need extra parsing logic, keep it. Otherwise, you can remove or simplify.
     alt_professions = []
-    data = get_response(url, headers)
-    if data and 'primaries' in data:
+    data = blizzard_api_request(url, headers)
+    if isinstance(data, dict) and 'primaries' in data:
         for primary in data['primaries']:
             prof = {
                 'name': primary['profession']['name'],
@@ -458,36 +486,63 @@ def get_professions(url, headers):
     return alt_professions
 
 def get_faction_details(faction_id, headers):
+    # Similarly replaced by direct calls to blizzard_api_request if needed
     url = f"https://us.api.blizzard.com/data/wow/reputation-faction/{faction_id}?namespace=static-us&locale=en_US"
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()
+    return blizzard_api_request(url, headers)
 
-def get_response(url, headers):
-    cached = r.get(url)
-    if cached:
-        if not isinstance(cached, str):
-            return json.loads(cached.decode('utf-8'))
+def blizzard_api_request(url, headers=None):
+    """Unified helper to handle Blizzard API calls with token checking and Redis caching."""
+    # 1. Check if there's a valid token in the session
+    token = get_valid_token()
+    if not token:
+        return redirect(url_for('login'))
+
+    # 2. See if the requested URL is in Redis
+    cached_response = r.get(url)  # using 'url' as cache key
+    if cached_response:
+        if not isinstance(cached_response, str):
+            return json.loads(cached_response.decode('utf-8'))
         else:
-            return json.loads(cached)
+            return json.loads(cached_response)
 
-    try:
-        if headers:
-            resp = requests.get(url, headers=headers)
-        else:
-            resp = requests.get(url)
-        resp.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        if resp.status_code == 404:
-            return
-        raise SystemExit(err)
+    # 3. If not cached, make a live request
+    all_headers = headers or {}
+    all_headers['Authorization'] = f'Bearer {token}'
 
-    # Cache in Redis
+    resp = requests.get(url, headers=all_headers)
+
+    # 4. If token is invalid/expired => 401 => clear session, redirect to /login
+    if resp.status_code == 401:
+        session.clear()
+        return redirect(url_for('login'))
+
+    # 5. If 404, just return None or handle as you wish
+    if resp.status_code == 404:
+        return None
+
+    resp.raise_for_status()
+
+    # 6. Store the fresh response in Redis
+    #    - If URL has 'profile', we set a 12-hour TTL
+    #    - Otherwise, indefinite or your preferred TTL
     if 'profile' in url:
-        r.set(url, resp.text, ex=43200)
+        r.set(url, resp.text, ex=43200)  # 12 hours = 43200 seconds
     else:
         r.set(url, resp.text)
-    return json.loads(resp.text)
+
+    # 7. Return JSON response
+    return resp.json()
+
+def is_token_expired():
+    if 'token_expires_at' not in session:
+        return True
+    return time.time() >= session['token_expires_at']
+
+def get_valid_token():
+    # Return None if token is missing or expired
+    if 'access_token' not in session or is_token_expired():
+        return None
+    return session['access_token']
 
 def set_token(code):
     data = {
@@ -506,9 +561,13 @@ def set_token(code):
     response_json = json.loads(response.text)
     print(response_json)
     access_token = response_json['access_token']
-    app.permanent_session_lifetime = response_json['expires_in']
+    expires_in = response_json.get('expires_in', 86400)  # default 24h
+
+    app.permanent_session_lifetime = expires_in
     session.permanent = True
-    session['battlenet_token'] = access_token
+    session['access_token'] = access_token
+    session['token_expires_at'] = time.time() + expires_in
+
     return access_token
 
 def ceil_dt(dt, delta):
