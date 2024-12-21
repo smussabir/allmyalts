@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, render_template, session, jsonify, url_for, Response, stream_with_context
+from flask import Flask, redirect, request, render_template, session, jsonify, url_for, Response, stream_with_context, abort, send_file
 from datetime import datetime, timedelta
 from dateutil import tz
 import pytz
@@ -6,10 +6,17 @@ import redis
 import requests
 import json
 import configparser
-import gamedata
 import time
 from collections import deque
 import re
+from urllib.parse import quote_plus
+import hashlib
+from pathlib import Path
+import os
+
+##
+# Setup
+##
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -27,9 +34,61 @@ app.secret_key = config['default']['secret_key']
 # Connect to Redis
 r = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
-
-# A global queue to store messages. We'll pop messages off this queue in the SSE endpoint.
+# A global queue to store SSE messages
 message_queue = deque()
+
+##
+# Local File Cache for Images
+##
+
+CACHE_DIR = Path("cache/images")
+CACHE_DIR.mkdir(parents=True, exist_ok=True)  # Ensure cache/images folder exists
+CACHE_TTL = 3600  # 1 hour time-to-live for cached images
+
+def get_local_image(image_url: str) -> str:
+    """
+    Checks if a locally cached copy of the image exists and is still valid.
+    If missing or older than CACHE_TTL, downloads from `image_url` and saves locally.
+    Returns the file path for the local image.
+    """
+    # Use an md5 hash of the URL for a unique filename (force .png or parse extension as needed)
+    image_key = hashlib.md5(image_url.encode("utf-8")).hexdigest()
+    local_path = CACHE_DIR / f"{image_key}.png"
+
+    # Check if file is fresh
+    if local_path.exists():
+        mtime = local_path.stat().st_mtime
+        if (time.time() - mtime) < CACHE_TTL:
+            return str(local_path)
+
+    # If missing or stale, re-download
+    resp = requests.get(image_url, timeout=10)
+    resp.raise_for_status()
+
+    with open(local_path, "wb") as f:
+        f.write(resp.content)
+
+    return str(local_path)
+
+@app.route("/cached-image")
+def cached_image():
+    """
+    Serve a locally cached version of an image, re-downloading if needed.
+    Expects ?url=<URL> as a query parameter.
+    """
+    image_url = request.args.get("url")
+    if not image_url:
+        abort(400, "Missing 'url' parameter")
+
+    try:
+        local_path = get_local_image(image_url)
+        return send_file(local_path, mimetype="image/png")
+    except requests.exceptions.RequestException as e:
+        abort(500, f"Image download failed: {str(e)}")
+
+##
+# SSE / Utility
+##
 
 def send_sse_message(message):
     """Add a message to the global queue to be sent to the client via SSE."""
@@ -41,31 +100,35 @@ def contains_digit(s):
 @app.route('/updates')
 def updates():
     def event_stream():
-        # Continuously yield any messages in the queue
         while True:
-            # If there are messages in the queue, yield them as SSE
             while message_queue:
                 msg = message_queue.popleft()
                 yield f"data: {msg}\n\n"
-            time.sleep(1)  # Prevent tight loop - adjust as needed
+            time.sleep(1)  # Prevent tight loop
     return Response(stream_with_context(event_stream()), mimetype="text/event-stream")
+
+##
+# Routes
+##
 
 @app.route('/')
 def index():
-    return render_template('index.html', navbar=False)
+    return render_template('index.html', navbar=False, loader=False)
 
 @app.route('/login')
 def login():
-    # Redirect the user to the Battle.net OAuth authorize endpoint
     print('/login')
-    return redirect('https://oauth.battle.net/authorize?client_id={}&redirect_uri={}&response_type=code&scope=wow.profile'.format(CLIENT_ID, 'http://localhost:8000/callback'))
+    return redirect(
+        'https://oauth.battle.net/authorize?client_id={}&redirect_uri={}&response_type=code&scope=wow.profile'.format(
+            CLIENT_ID, 'http://localhost:8000/callback'
+        )
+    )
 
 @app.route('/callback')
 def callback():
     print('/callback')
     if 'battlenet_token' not in session:
         print('no token')
-        # Get the authorization code from the query string
         code = request.args.get('code')
         access_token = set_token(code)
     return redirect(url_for('alts'))
@@ -74,9 +137,11 @@ def callback():
 def alts():
     return render_template("alts.html", navbar=True)
 
-@app.route('/mounts')
-def mounts():
-    return render_template("mounts.html", navbar=True)
+@app.route('/alt_detail')
+def alt_detail():
+    name = request.args.get('name')
+    realm = request.args.get('realm')
+    return render_template("alt-detail.html", modal=True)
 
 @app.route('/reps')
 def reps():
@@ -86,14 +151,17 @@ def reps():
 def info():
     return render_template("info.html", navbar=True)
 
+##
+# get_alts
+##
 
 @app.route('/get_alts', methods=['POST'])
 def get_alts():
     print('Starting /get_alts')
     if request.method == 'POST':
-        # Use the access token to make an authenticated API request
+        # OAuth token
         access_token = session.get('battlenet_token')
-        headers = {'Authorization': 'Bearer {}'.format(access_token)}
+        headers = {'Authorization': f'Bearer {access_token}'}
 
         send_sse_message('Getting user info')
         user_info = get_response('https://oauth.battle.net/userinfo', headers)
@@ -120,115 +188,132 @@ def get_alts():
         for account in character_data['wow_accounts']:
             number_alts += len(account['characters'])
             for character in account['characters']:
-                
-                alt = {}
-                alt['account_id'] = account['id']
-                alt['name'] = character['name']
-                alt['character_id'] = character['id']
-                alt['level'] = character['level']
-                alt['realm'] = character['realm']['name']
-                alt['realm_slug'] = character['realm']['slug']
-                alt['realm_id'] = character['realm']['id']
-                alt['class'] = character['playable_class']['name']
-                alt['race'] = character['playable_race']['name']
-                alt['gender'] = character['gender']['name']
-                alt['faction'] = character['faction']['name']
+                alt = {
+                    'account_id': account['id'],
+                    'name': character['name'],
+                    'character_id': character['id'],
+                    'level': character['level'],
+                    'realm': character['realm']['name'],
+                    'realm_slug': character['realm']['slug'],
+                    'realm_id': character['realm']['id'],
+                    'class': character['playable_class']['name'],
+                    'race': character['playable_race']['name'],
+                    'gender': character['gender']['name'],
+                    'faction': character['faction']['name'],
+                    'achievement_points': 0,
+                    'average_item_level': 0,
+                    'last_login': '',
+                    'professions': '',
+                    'gold': '0',
+                    'silver': '0',
+                    'copper': '0',
+                    'location': ''
+                }
 
-                alt['achievement_points'] = 0
-                alt['average_item_level'] = 0
-                alt['last_login'] = ''
-                alt['professions'] = ''
-                alt['gold'] = alt['silver'] = alt['copper'] = '0'
-                alt['location'] = ''
+                # Filter out low-level + digit-named
+                if alt['level'] > 20 and not contains_digit(alt['name']):
+                    send_sse_message('Processing: ' + alt['name'])
 
-                if alt['level'] >20 and not contains_digit(alt['name']):
-                    send_sse_message('Processing: ' + alt['name'] )
-
-
-                    media = get_response('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '/character-media?namespace=profile-us&locale=en_US', headers)
+                    # Character media
+                    media = get_response(
+                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/character-media?namespace=profile-us&locale=en_US",
+                        headers
+                    )
                     if media:
                         for asset in media['assets']:
+                            cached_url = f"/cached-image?url={quote_plus(asset['value'])}"
                             if asset['key'] == 'avatar':
-                                alt['avatar_image'] = asset['value']
+                                alt['avatar_image'] = cached_url
                             if asset['key'] == 'inset':
-                                alt['inset_image'] = asset['value']
+                                alt['inset_image'] = cached_url
                             if asset['key'] == 'main-raw':
-                                alt['main_image'] = asset['value']
+                                alt['main_image'] = cached_url
 
-                    data = get_response('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '?namespace=profile-us&locale=en_US', headers)
+                    # Character profile summary
+                    data = get_response(
+                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}?namespace=profile-us&locale=en_US",
+                        headers
+                    )
                     if data:
                         alt['achievement_points'] = data['achievement_points']
                         alt['average_item_level'] = data['average_item_level']
-                        timestamp = data['last_login_timestamp']/1000
+                        timestamp = data['last_login_timestamp'] / 1000
                         alt['last_login'] = convert_timestamp(timestamp)
                         if 'active_spec' in data:
                             alt['spec'] = data['active_spec']['name']
 
-                    professions = []
-                    professions_data = get_professions('https://us.api.blizzard.com/profile/wow/character/' + alt['realm_slug'] + '/' + alt['name'].lower() + '/professions?namespace=profile-us&locale=en_US', headers)
-                    if data:
-                        for profession in professions_data:
-                            alt_profession = {}
-                            alt_profession['name'] = profession['name']
-                            alt_profession['tier'] = profession['tier_name']
-                            alt_profession['skill_points'] = profession['skill_points']
-                            alt_profession['max_skill_points'] = profession['max_skill_points']
-                            professions.append(alt_profession)
-                        alt['professions'] = professions
+                    # Professions
+                    professions_data = get_professions(
+                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/professions?namespace=profile-us&locale=en_US",
+                        headers
+                    )
+                    if data and professions_data:
+                        prof_list = []
+                        for prof in professions_data:
+                            prof_dict = {
+                                'name': prof['name'],
+                                'tier': prof['tier_name'],
+                                'skill_points': prof['skill_points'],
+                                'max_skill_points': prof['max_skill_points']
+                            }
+                            prof_list.append(prof_dict)
+                        alt['professions'] = prof_list
 
-                    data = get_response('https://us.api.blizzard.com/profile/user/wow/protected-character/' + str(alt['realm_id']) + '-' + str(alt['character_id']) + '?namespace=profile-us&locale=en_US', headers)
+                    # Protected character info (money, location)
+                    data = get_response(
+                        f"https://us.api.blizzard.com/profile/user/wow/protected-character/{alt['realm_id']}-{alt['character_id']}?namespace=profile-us&locale=en_US",
+                        headers
+                    )
                     if data:
                         total_money += data['money']
                         alt['gold'], alt['silver'], alt['copper'] = convert_money(str(data['money']))
                         alt['location'] = data['position']['zone']['name']
 
                 alts.append(alt)
-        
+
         end = time.time()
         elapsed = end - start
         print('/get_alts: loop ended')
         send_sse_message('/get_alts: loop ended')
         print(f'{elapsed} s seconds')
 
-        # print(characters)
         alts.sort(key=lambda x: (x['account_id'], x['level'], x['name']))
-        summary = {}
-        summary['accounts'] = len(character_data['wow_accounts'])
-        summary['number_alts'] = number_alts
-        summary['battletag'] = battletag
+        summary = {
+            'accounts': len(character_data['wow_accounts']),
+            'number_alts': number_alts,
+            'battletag': battletag
+        }
         summary['gold'], summary['silver'], summary['copper'] = convert_money(str(total_money))
         return [alts, summary]
+
+##
+# get_reps
+##
 
 @app.route('/get_reps', methods=['POST'])
 def get_reps():
     if request.method == 'POST':
-        # Use the access token to make an authenticated API request
         access_token = session.get('battlenet_token')
-        headers = {'Authorization': 'Bearer {}'.format(access_token)}
-
-        # Retrieve expansion ID from POST data, default to "The War Within" (ID: 2569)
+        headers = {'Authorization': f'Bearer {access_token}'}
         expansion_id = request.json.get('expansion_id', 2569)
 
         send_sse_message('Getting factions for xpac')
-
-        # Get factions for expansion
-        xpac_factions = get_response(f'https://us.api.blizzard.com/data/wow/reputation-faction/' + str(expansion_id) + '?namespace=static-us&locale=en_US', headers)
-        # Transform the faction list into a dictionary keyed by faction ID:
+        xpac_factions = get_response(
+            f"https://us.api.blizzard.com/data/wow/reputation-faction/{expansion_id}?namespace=static-us&locale=en_US",
+            headers
+        )
         xpac_name = xpac_factions['name']
         send_sse_message('Getting factions for ' + xpac_name)
-        factions_by_id = {faction["id"]: faction for faction in xpac_factions["factions"]}
+        factions_by_id = {f["id"]: f for f in xpac_factions["factions"]}
 
+        # Enrich faction data
         for faction_id, faction_data in factions_by_id.items():
             faction_details = get_faction_details(faction_id, headers)
-
-            # Merge the detailed data into the faction_data
             if "renown_tiers" in faction_details:
                 faction_data["renown_tiers"] = faction_details["renown_tiers"]
-                # Determine max rank from the length of renown_tiers
                 faction_data["max_renown_level"] = len(faction_details["renown_tiers"])
             else:
-                faction_data["max_renown_level"] = None  # or 0, if no renown tiers
-
+                faction_data["max_renown_level"] = None
             if "description" in faction_details:
                 faction_data["description"] = faction_details["description"]
             if "can_paragon" in faction_details:
@@ -236,19 +321,22 @@ def get_reps():
             if "is_renown" in faction_details:
                 faction_data["is_renown"] = faction_details["is_renown"]
 
-        # Get user information
+        # Get user info
         send_sse_message('Getting user info')
-
-        user_info = get_response(f'https://oauth.battle.net/userinfo?access_token={access_token}', '')
+        user_info = get_response(
+            f"https://oauth.battle.net/userinfo?access_token={access_token}",
+            ""
+        )
         battletag = user_info['battletag']
 
-        # Fetch account and character data
-        character_data = get_response(f'https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US', headers)
+        character_data = get_response(
+            f"https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US",
+            headers
+        )
         alts = []
 
         for account in character_data['wow_accounts']:
             for character in account['characters']:
-                # Filter out low-level characters and characters with numeric names
                 if character['level'] > 60 and not contains_digit(character['name']):
                     alt = {
                         'account_id': account['id'],
@@ -262,16 +350,14 @@ def get_reps():
                         'faction': character['faction']['name'],
                     }
 
-                    # Fetch reputation data
+                    # Get reps
                     send_sse_message('Getting rep data for ' + character['name'])
                     reps_data = get_response(
-                        f'https://us.api.blizzard.com/profile/wow/character/{alt["realm_slug"]}/{alt["name"].lower()}/reputations?namespace=profile-us&locale=en_US',
-                        headers,
+                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/reputations?namespace=profile-us&locale=en_US",
+                        headers
                     )
                     reps = []
-
                     for item in reps_data['reputations']:
-                        # Only include reputations with a faction ID matching the expansion filter
                         if item['faction']['id'] in factions_by_id:
                             faction_data = factions_by_id[item['faction']['id']]
                             rep = {
@@ -283,88 +369,93 @@ def get_reps():
                                 'tier': item['standing'].get('tier', ''),
                                 'renown_level': item['standing'].get('renown_level', ''),
                                 'standing_name': item['standing']['name'],
-
-                                # Add new variables from factions_by_id:
                                 'is_renown': faction_data.get('is_renown', False),
                                 'max_renown_level': faction_data.get('max_renown_level', None),
                                 'can_paragon': faction_data.get('can_paragon', False),
                                 'description': faction_data.get('description', ''),
-
-                                # If you stored renown tiers:
                                 'renown_tiers': faction_data.get('renown_tiers', [])
                             }
                             reps.append(rep)
 
                     alt['reps'] = reps
 
-                    # Fetch character media
+                    # Get media
                     send_sse_message('Getting media data for ' + character['name'])
                     media = get_response(
-                        f'https://us.api.blizzard.com/profile/wow/character/{alt["realm_slug"]}/{alt["name"].lower()}/character-media?namespace=profile-us&locale=en_US',
-                        headers,
+                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}/character-media?namespace=profile-us&locale=en_US",
+                        headers
                     )
                     if media:
                         for asset in media['assets']:
+                            cached_url = f"/cached-image?url={quote_plus(asset['value'])}"
                             if asset['key'] == 'avatar':
-                                alt['avatar_image'] = asset['value']
+                                alt['avatar_image'] = cached_url
                             if asset['key'] == 'inset':
-                                alt['inset_image'] = asset['value']
+                                alt['inset_image'] = cached_url
                             if asset['key'] == 'main-raw':
-                                alt['main_image'] = asset['value']
+                                alt['main_image'] = cached_url
 
-                    # Fetch additional character info
+                    # Additional character info
                     profile_summary = get_response(
-                        f'https://us.api.blizzard.com/profile/wow/character/{alt["realm_slug"]}/{alt["name"].lower()}?namespace=profile-us&locale=en_US',
-                        headers,
+                        f"https://us.api.blizzard.com/profile/wow/character/{alt['realm_slug']}/{alt['name'].lower()}?namespace=profile-us&locale=en_US",
+                        headers
                     )
                     timestamp = profile_summary['last_login_timestamp'] / 1000
                     alt['last_login'] = convert_timestamp(timestamp)
 
                     alts.append(alt)
 
-        # Sort characters by account ID, level, and name
         alts.sort(key=lambda x: (x['account_id'], x['level'], x['name']))
         return jsonify(alts)
 
+##
+# alt detail
+##
+
+@app.route('/get_alt_detail', methods=['POST'])
+def get_alt_detail():
+    if request.method == 'POST':
+        altName = request.json.get('name', '')
+        altRealm = request.json.get('realm', '')
+        sample_html = f"""
+            <h1>Details for {altName} on {altRealm}</h1>
+            <p>This is some sample HTML content to test the modal display.</p>
+            <ul>
+                <li>Item 1</li>
+                <li>Item 2</li>
+            </ul>
+        """
+        return jsonify({'html': sample_html})
+
+##
+# Helper Functions
+##
+
 def convert_timestamp(timestamp):
-    # convert the timestamp to a datetime object
     dt = datetime.fromtimestamp(timestamp, pytz.timezone('UTC'))
-
-    # convert the datetime object to Central time
     central = dt.astimezone(pytz.timezone('America/Chicago'))
-
-    # format the datetime object as a string in the desired format
-    result = central.strftime('%Y-%m-%dT%H:%M:%S')
-
-    return result
+    return central.strftime('%Y-%m-%dT%H:%M:%S')
 
 def convert_money(money):
-    # get the last two characters
     copper = money[-2:]
-
-    # get the next two characters
     silver = money[-4:-2]
-
-    # get the remainder
     gold = money[:-4]
-
     return gold, silver, copper
 
 def get_professions(url, headers):
     alt_professions = []
     data = get_response(url, headers)
-    if data:
-        if 'primaries' in data:
-            for primary in data['primaries']:
-                prof = {}
-                prof['name'] = primary['profession']['name']
-                prof['id'] = primary['profession']['id']
-                prof['tier_name'] = primary['tiers'][len(primary['tiers'])-1]['tier']['name']
-                prof['skill_points'] = primary['tiers'][len(primary['tiers'])-1]['skill_points']
-                prof['max_skill_points'] = primary['tiers'][len(primary['tiers'])-1]['max_skill_points']
-                alt_professions.append(prof)
-        return alt_professions
-    return
+    if data and 'primaries' in data:
+        for primary in data['primaries']:
+            prof = {
+                'name': primary['profession']['name'],
+                'id': primary['profession']['id'],
+                'tier_name': primary['tiers'][-1]['tier']['name'],
+                'skill_points': primary['tiers'][-1]['skill_points'],
+                'max_skill_points': primary['tiers'][-1]['max_skill_points']
+            }
+            alt_professions.append(prof)
+    return alt_professions
 
 def get_faction_details(faction_id, headers):
     url = f"https://us.api.blizzard.com/data/wow/reputation-faction/{faction_id}?namespace=static-us&locale=en_US"
@@ -373,34 +464,32 @@ def get_faction_details(faction_id, headers):
     return response.json()
 
 def get_response(url, headers):
-    # Check if the response is in the cache
-    response = r.get(url)
-    if response:
-        if type(response) != str:
-            return json.loads(response.decode('utf-8'))
+    cached = r.get(url)
+    if cached:
+        if not isinstance(cached, str):
+            return json.loads(cached.decode('utf-8'))
         else:
-            return json.loads(response)
+            return json.loads(cached)
 
     try:
-        if headers != '':
-            response = requests.get(url, headers=headers)
+        if headers:
+            resp = requests.get(url, headers=headers)
         else:
-            response = requests.get(url)
-        response.raise_for_status()
+            resp = requests.get(url)
+        resp.raise_for_status()
     except requests.exceptions.HTTPError as err:
-        if response.status_code == 404:
+        if resp.status_code == 404:
             return
-
         raise SystemExit(err)
-    
+
+    # Cache in Redis
     if 'profile' in url:
-        r.set(url, response.text, ex=43200)
+        r.set(url, resp.text, ex=43200)
     else:
-        r.set(url, response.text)
-    return json.loads(response.text)
+        r.set(url, resp.text)
+    return json.loads(resp.text)
 
 def set_token(code):
-    # Exchange the authorization code for an access token
     data = {
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
@@ -418,13 +507,16 @@ def set_token(code):
     print(response_json)
     access_token = response_json['access_token']
     app.permanent_session_lifetime = response_json['expires_in']
-
     session.permanent = True
-    session['battlenet_token'] = (access_token)
+    session['battlenet_token'] = access_token
     return access_token
 
 def ceil_dt(dt, delta):
     return dt + (datetime.min - dt) % delta
 
+##
+# Run
+##
+
 if __name__ == '__main__':
-     app.run(host="localhost", port=8000, debug=True)
+    app.run(host="localhost", port=8000, debug=True)

@@ -244,6 +244,42 @@ nav li {
   padding: 5px;
 }
 
+.view-alt-details {
+  cursor: pointer;
+}
+
+/* Always include the icon pseudo-element, but hide it by default. */
+.card.view-alt-details::after {
+  content: "\f35d";               /* Use the correct Font Awesome icon's Unicode */
+  color: #FFF;
+  font-family: "Font Awesome 6 Free"; 
+  font-size: 1.5rem;
+  font-weight: 900;               /* For solid icons */
+  margin-left: 7px;
+  position: absolute;
+  top: -12px;
+  right: 10px;
+  visibility: hidden;             /* Hide initially to reserve space but keep layout */
+}
+
+#alts-table .view-alt-details::after {
+  content: "\f35d";               /* Use the correct Font Awesome icon's Unicode */
+  font-family: "Font Awesome 6 Free"; 
+  font-weight: 900;               /* For solid icons */
+  margin-left: 7px;
+  visibility: hidden;             /* Hide initially to reserve space but keep layout */
+}
+
+/* Reveal the icon on hover without changing layout, since it's already there. */
+.view-alt-details:hover::after {
+  visibility: visible;
+}
+
+/* Optional text styling on hover */
+#alts-table .view-alt-details:hover {
+  font-weight: bold;
+}
+
 #alts, #mounts, #reps {
   display: grid;
   grid-gap: 30px;
@@ -336,6 +372,7 @@ nav li {
   /* border-bottom: 1px solid #ccc; */
   font-size: .9rem;
   padding: 10px;
+  vertical-align: middle;
 }
 
 #alts-table td .cell-text {
@@ -378,6 +415,39 @@ article.summary {
 .card-img-top > img:hover {
   transform: scale(1.5); /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
 }
+
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.7); /* dim background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* ensure it’s on top */
+}
+
+.modal-window {
+  background: #fff;
+  border-radius: 5px;
+  width: 60%;
+  max-width: 700px;
+  padding: 20px;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #333;
+}
+
 #reps .card {
   background-color: var(--dark-bg);; /* a neutral gray */
   background-blend-mode: luminosity; /* or saturation */

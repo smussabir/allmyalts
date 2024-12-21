@@ -48,7 +48,7 @@ $(document).ready(function () {
         var source = new EventSource('/updates');
         source.onmessage = function(e) {
             // Replace status with new message
-            $('.status-updates').text(e.data);
+            // $('.status-updates').text(e.data);
         };
         source.onerror = function(e) {
             console.error("SSE error", e);

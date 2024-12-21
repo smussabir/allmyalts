@@ -92,7 +92,9 @@ $(document).ready(function() {
         });
 
 
-        $(document).on('click', '.icon', function () {
+        $(document).on('click', '.icon', function(event) {
+            // This prevents the click event from bubbling up to parent elements
+            event.stopPropagation();            
             // Get the filter value from the clicked icon
             const altFilter = '.' + $(this).attr('data-filter');
         
@@ -136,6 +138,46 @@ $(document).ready(function() {
         lastSortDirection = 'desc';
         sortAlts('level', 'desc');
     });
+
+    // Close modal logic
+    $('.modal-close').on('click', function() {
+        $('#modal-overlay').fadeOut();
+    });
+
+    // If you want to close the modal by clicking outside the modal window:
+    $('#modal-overlay').on('click', function(e) {
+        if (e.target === this) {
+            $(this).fadeOut();
+        }
+    });
+
+    // Open modal logic
+    // Delegation used if .view-details-btn is dynamically added after AJAX calls
+    $(document).on('click', '.view-alt-details', function() {
+        const altName = $(this).data('alt-name');
+        const altRealm = $(this).data('alt-realm');
+    
+        $('#modal-body').html('<p>Loading...</p>');
+        $('#modal-overlay').fadeIn();
+    
+        // Update the AJAX call to send name and realm_slug instead of alt_id
+        $.ajax({
+            type: 'POST',
+            url: '/get_alt_detail', // Your backend endpoint
+            contentType: 'application/json',
+            data: JSON.stringify({ 
+                name: altName, 
+                realm: altRealm 
+            }),
+            success: function(response) {
+                $('#modal-body').html(response.html || 'No details available.');
+            },
+            error: function(xhr, status, error) {
+                $('#modal-body').html('<p>Error loading details.</p>');
+            }
+        });
+    });
+
 });
 
 function formatLastLogin(dateString) {
@@ -266,7 +308,7 @@ function renderTableView() {
         }
         $('#alts-table tbody').append(`
             <tr class="${altFaction}">
-                <td class="${altClass}">${alt.name}</td>
+                <td class="${altClass} view-alt-details" data-alt-name="${alt.name}" data-alt-realm="${alt.realm}">${alt.name}</td>
                 <td>${alt.realm}</td>
                 <td>${alt.gender}</td>
                 <td>${alt.race}</td>
@@ -316,6 +358,10 @@ function renderTableView() {
 }
 
 function createCard(alt) {
+    let altBg = '';
+    if (alt.main_image) {
+        altBg = `style="background-image: url('${alt.main_image}')"`;
+    }
     let altClass = alt.class.toLowerCase().replace(' ', '');
     let altFaction = alt.faction.toLowerCase();
     let altLevel = '';
@@ -343,7 +389,7 @@ function createCard(alt) {
     } 
 
     let card = `
-    <article class="alt card ${altClass} ${altFaction}" style="background-image: url('${alt.main_image}')">    
+    <article class="alt card ${altClass} ${altFaction} view-alt-details" data-alt-name="${alt.name}" data-alt-realm="${alt.realm}" ${altBg})">    
         <div class="card-body">
             <h1 class="card-title ${altClass}">${ alt.name }</h1>
             <dl>

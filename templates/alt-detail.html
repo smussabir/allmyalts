@@ -1,7 +1,4 @@
-{% extends "layout.html" %}
-{% block title %}
-ALLmyALTS - Mounts
-{% endblock %}
+{% extends "modal.html" %}
 {% block content %}
 <section class="loader-content flex">
     <div id="loader">    
@@ -16,9 +13,9 @@ ALLmyALTS - Mounts
     </div>
 </section>
 <section class="main-content">
-    <div id="mounts"></div>
+    <div id="details"></div>
 </section>    
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='mounts.js')}}"></script>
+<script src="{{ url_for('static', filename='alt-detail.js')}}"></script>
 {% endblock scripts %}

@@ -15,7 +15,7 @@
     <div class="container flex">
       <header class="flex">
         <div class="logo"><img src="{{ url_for('static', filename='images/logo-horizontal.png')}}" alt="AllmyAlts"></div>
-        {% if navbar  %}
+        {% if navbar %}
         <nav class="navbar rounded-bottom flex">
           <ul class="navbar-nav flex">
             <li class="nav-item"><a class="nav-link" aria-current="page" href="/">Home</a></li>
@@ -27,9 +27,23 @@
         </nav>
         {% endif %}
       </header>
-
-        {% block content %}
-        {% endblock %}
+      {% if loader %}
+      <section class="loader-content flex">
+        <div id="loader">    
+            <div class="loadingio-spinner-pulse-o89txhcmc6l">
+                <div class="ldio-7e77dstxs7e">
+                    <div class="rounded"></div>
+                    <div class="rounded"></div>
+                    <div class="rounded"></div>
+                </div>
+            </div>
+            <div class="timer">Loading: <span class="load-timer"></span></div>
+            <div class="status-updates"></div>
+        </div>
+      </section>
+      {% endif %}
+      {% block content %}
+      {% endblock %}
 
       <footer class="page-footer font-small blue">
         <div class="footer-copyright text-center">© 2024 Copyright</div>
