@@ -1051,7 +1051,7 @@ footer {
   }
   100% {
     transform: skew(0deg);
-    transform: scale(1); /* Scales uniformly */  }
+    transform: scale(1); /* Scales uniformly */  
   }
 }
 
