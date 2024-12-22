@@ -448,6 +448,7 @@ def get_alt_detail():
                         <img src='{main_image}' class='image-skew' />
                     </div>
                 </article>
+                <div id='modal-particles'></div>
             """
             return jsonify({'html': detail})
         else:

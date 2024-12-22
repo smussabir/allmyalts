@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Transparent Orb Test</title>
+  <style>
+    #test-container {
+      position: relative;
+      width: 500px;
+      height: 400px;
+      margin: 50px auto;
+      background-color: #333; /* a dark background to see alpha contrast */
+      border: 2px solid #555;
+    }
+    /* The tsparticles container */
+    #modal-particles {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Transparent Orb Demo</h1>
+  <div id="test-container">
+    <div id="modal-particles"></div>
+  </div>
+
+  <!-- tsparticles + emitters plugin from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles-plugin-emitters@2/tsparticles.plugin.emitters.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      tsParticles.load("modal-particles", {
+        fullScreen: { enable: false },
+        background: { color: "transparent" },
+        particles: { number: { value: 0 } },
+        emitters: [
+          {
+            position: { x: 50, y: 50, mode: "percent" },
+            size: { width: 0, height: 0 },
+            rate: { quantity: 1, delay: 0 },
+            particles: {
+              color: {
+                /* 50% alpha gold */
+                value: "rgba(255, 215, 0, 0.5)"
+              },
+              size: { value: 200 },
+              opacity: { value: 1 },
+              move: {
+                enable: true,
+                speed: 0,
+                outModes: { default: "none" }
+              },
+              rotate: {
+                animation: {
+                  enable: true,
+                  speed: 2
+                }
+              }
+            }
+          }
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

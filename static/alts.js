@@ -22,6 +22,255 @@ const animateCSS = (element, animation, prefix = 'animate__') =>
       node.addEventListener('animationend', handleAnimationEnd, {once: true});
 });
 
+const classParticleConfigs = {
+    // For Death Knight, a “snow” effect
+    deathknight: {
+      fullScreen: { enable: false },
+      background: { color: "transparent" },
+      particles: {
+        number: { value: 80 },
+        color: { value: "#ffffff" },
+        shape: { type: "circle" },
+        opacity: { value: 0.8 },
+        size: {
+          value: 3,
+          random: { enable: true, minimumValue: 1 }
+        },
+        move: {
+          enable: true,
+          direction: "bottom",
+          speed: 1,
+          outModes: { default: "out" }
+        }
+      }
+    },
+  
+    // For Druid, a leaf effect (image shapes)
+    druid: {
+      fullScreen: { enable: false },
+      background: { color: "transparent" },
+      particles: {
+        number: { value: 50 },
+        shape: {
+          type: "image",
+          image: [
+            { src: "/static/images/leaves/leaf-1.png", width: 86, height: 121 },
+            { src: "/static/images/leaves/leaf-2.png", width: 61, height: 121 },
+            { src: "/static/images/leaves/leaf-3.png", width: 73, height: 120 },
+            { src: "/static/images/leaves/leaf-4.png", width: 104, height: 112 },
+            { src: "/static/images/leaves/leaf-5.png", width: 88, height: 132 },
+            { src: "/static/images/leaves/leaf-6.png", width: 125, height: 121 },
+            { src: "/static/images/leaves/leaf-7.png", width: 72, height: 156 },
+            { src: "/static/images/leaves/leaf-8.png", width: 55, height: 137 },
+            { src: "/static/images/leaves/leaf-9.png", width: 88, height: 124 },
+            { src: "/static/images/leaves/leaf-10.png", width: 64, height: 108 },
+            { src: "/static/images/leaves/leaf-11.png", width: 75, height: 126 },
+            { src: "/static/images/leaves/leaf-12.png", width: 51, height: 142 }
+          ]
+        },
+        opacity: { value: 0.8 },
+        size: { value: 5, random: true },
+        move: {
+          enable: true,
+          speed: 1,
+          direction: "none",
+          random: true,
+          outModes: { default: "out" }
+        }
+      }
+    },
+    paladin: {
+    // Fullscreen disabled so it stays in your container
+    fullScreen: { enable: false },
+    background: { color: "transparent" },
+
+    // No default particles, rely on an emitter
+    particles: {
+        number: { value: 0 }
+    },
+
+    // Use the emitters plugin
+    emitters: [
+        {
+        // Position at 50% across, 20% down, in percentage mode
+        position: { x: 50, y: 60, mode: "percent" },
+
+        size: { width: 0, height: 0 },
+        rate: {
+            quantity: 1, // spawn exactly one particle
+            delay: 0     // immediately
+        },
+
+        particles: {
+            // Shape: single image
+            shape: {
+            type: "image",
+            image: {
+                // path to your PNG
+                src: "/static/images/paladin-bubble.png",
+                width: 1000,   // actual image width in px
+                height: 1000   // actual image height in px
+            }
+            },
+
+            // Adjust the drawn size of the orb in px
+            size: {
+            value: 300
+            },
+
+            // If you want transparency, set an opacity
+            opacity: { value: 0.05 },
+
+            // Keep it stationary
+            move: {
+            enable: true,
+            speed: 0,
+            outModes: { default: "none" }
+            },
+
+            // Optional: add slow rotation
+            rotate: {
+            animation: {
+                enable: true,
+                speed: 2
+            }
+            }
+        }
+        }
+    ]
+    },
+
+    demonhunter: {
+        fullScreen: { enable: false },
+        background: { color: "transparent" },
+
+        particles: {
+            // Enough particles to make it visually dynamic
+            number: {
+            value: 50,
+            density: {
+                enable: true,
+                value_area: 800
+            }
+            },
+            // Bright green color for Demon Hunter vibe
+            color: {
+            value: "#00FF00"
+            },
+            // Optionally "circle", "star", or "polygon" for a trailing shape
+            shape: { type: "polygon" },
+            opacity: {
+            value: 0.7 // slightly transparent
+            },
+            // Each “meteor” size can vary
+            size: {
+            value: 5,
+            random: true
+            },
+            move: {
+            enable: true,
+            // Speed up the streaks to 4 or 5 to simulate meteor fast movement
+            speed: 5,
+            // “direction: top” means they move upward.
+            // If you want them showering downward, set direction: "bottom".
+            direction: "top-right",
+            random: true,  // Set to true if you want them at varying angles
+            straight: true, // false => they can slightly deviate from straight lines
+            // Particles exiting the container are removed
+            outModes: {
+                default: "out"
+            }
+            }
+        }
+        },
+    hunter: {
+    // Not filling the entire screen, just the container
+    fullScreen: { enable: false },
+    background: { color: "transparent" },
+
+    // No default base particles
+    particles: {
+        number: { value: 0 }
+    },
+
+    emitters: [
+        // Emitter on the left side, shooting arrows rightward
+        {
+        position: { x: 0, y: 0, mode: "percent" }, 
+        size: { width: 0, height: 100 },
+        rate: {
+            quantity: 1, // how many arrows at once
+            delay: { min: 1, max: 4 }
+        },
+        // Force direction "right" so arrows go horizontally across the container
+        direction: "right",
+        particles: {
+            shape: {
+            type: "image",
+            image: {
+                // path to your arrow image
+                src: "/static/images/arrow.png",
+                width: 400,
+                height: 24
+            }
+            },
+            size: { value: 60 },        // scale the arrow
+            opacity: { value: 1 },      // fully opaque or adjust for slight transparency
+            move: {
+            enable: true,
+            speed: { min: 10, max: 30 }, // random speed between 3 and 8            random: false,   // don't randomize angles
+            straight: true,  // move in a single straight line
+            outModes: {
+                default: "none"         // arrow disappears off the right edge
+            }
+            }
+        }
+        },
+
+        // Emitter on the right side, shooting arrows leftward
+        {
+        position: { x: 100, y: 0, mode: "percent" },
+        size: { width: 0, height: 100 },
+        rate: {
+            quantity: 1, 
+            delay: { min: 1, max: 3 }
+        },
+        direction: "left", // or you can manually set an angle if you prefer
+        particles: {
+            shape: {
+            type: "image",
+            image: [
+                {
+                  src: "/static/images/arrow.png",
+                  width: 400,
+                  height: 24
+                },
+                {
+                  src: "/static/images/arrow-2.png",
+                  width: 400,
+                  height: 43
+                }
+              ]            },
+            size: { value: 60 },
+            opacity: { value: 1 },
+            move: {
+            enable: true,
+            speed: 20,
+            random: false,   // don't randomize angles
+            straight: true,  // move in a single straight line
+            outModes: {
+                default: "none"
+            }
+            },
+            rotate: {
+            value: 180, // rotate 180 so arrow points left
+            animation: { enable: false }
+            }
+        }
+        }
+    ]
+    }        
+  };
 $(document).ready(function() {
     var ajaxTime = Date.now();
     var secs = 0;
@@ -189,13 +438,44 @@ $(document).ready(function() {
             }),
             success: function(response) {
                 $('#modal-body').html(response.html || 'No details available.');
+
+                // 1. Find the <article> or container with a class name representing the class
+                // e.g. <article class='alt-detail deathknight'>
+                const $article = $('#modal-body').find('article.alt-detail');
+
+                // 2. Extract the class name
+                //    [0] might be 'alt-detail', [1] might be 'deathknight'
+                let altClass = '';
+                if ($article.length > 0) {
+                    const classes = $article.attr('class').split(/\s+/);
+                    altClass = classes.find(c => c !== 'alt-detail') || '';
+                }
+
+                if (altClass == 'rogue') {
+                    const $img = $article.find('img.image-skew');
+                    fadeInAndOutRandom($img); // start random fade cycle
+                }
+                // Suppose each time you open the modal:
+                const existing = tsParticles.domItem(0); 
+                // or tsParticles.dom().find(item => item.interactivity.element.id === "modal-particles")
+
+                if (existing) {
+                    existing.destroy(); // remove old particles instance
+                }
+
+                // 3. If we have a config for that class, load tsparticles; otherwise skip
+                if (classParticleConfigs[altClass]) {
+                    tsParticles.load("modal-particles", classParticleConfigs[altClass]);
+                } else {
+                    // No config for this class => do nothing or console.log
+                    console.log(`No particle config found for class: ${altClass}`);
+                }
             },
             error: function(xhr, status, error) {
                 $('#modal-body').html('<p>Error loading details.</p>');
             }
         });
     });
-
 });
 
 function formatLastLogin(dateString) {
@@ -485,3 +765,23 @@ $("a[href='#top']").click(function() {
     $('html, body').animate({ scrollTop: 0 }, 1200);
     return false;
 });
+
+function fadeInAndOutRandom($img) {
+    // 1) Random time to remain faded (1..3 seconds, e.g.)
+    const fadeOutDuration = Math.random() * 2 + 1; 
+    // 2) Random wait before next fade cycle (2..6 seconds)
+    const nextInterval = Math.random() * 5 + 5;
+  
+    // Fade out by adding 'faded' class
+    $img.addClass('faded');
+  
+    // After fadeOutDuration, fade back in
+    setTimeout(() => {
+      $img.removeClass('faded');
+    }, fadeOutDuration * 1000);
+  
+    // Then after fadeOutDuration + nextInterval, run again
+    setTimeout(() => {
+      fadeInAndOutRandom($img);
+    }, (fadeOutDuration + nextInterval) * 1000);
+  }
