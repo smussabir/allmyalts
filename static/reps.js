@@ -277,7 +277,7 @@ function createCard(alt) {
     }
 
     let card = `
-    <article class="alt card ${altClass} ${altFaction}" style="background-image: url('${alt.main_image}')">
+    <article class="alt card ${altClass} ${altFaction}">
         <div class="card-body">
             <h1 class="card-title ${altClass}">${alt.name}</h1>
             <dl>
@@ -307,11 +307,6 @@ function createCard(alt) {
             <div class="card-footer">
                 <p class="alt-id">${alt.character_id}</p>
                 <p class="last-login">${formatLastLogin(alt.last_login)}</p>
-            </div>
-            <div class="alt-icons">
-                <img class="icon faction-icon ${altFaction}-icon" data-filter="${altFaction}" src="/static/images/${altFaction}.png" alt="${alt.faction} icon">
-                <img class="icon class-icon" data-filter="${altClass}" src="/static/flatborder/${altClass}_flatborder.png" alt="${altClass} icon">
-                ${altLevel}
             </div>
         </div>
     </article>

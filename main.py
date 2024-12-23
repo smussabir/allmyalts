@@ -1,35 +1,32 @@
 from flask import Flask, redirect, request, render_template, session, jsonify, url_for, Response, stream_with_context, abort, send_file
 from datetime import datetime, timedelta
 from dateutil import tz
+from dotenv import load_dotenv
+from urllib.parse import quote_plus
+from pathlib import Path
+from bs4 import BeautifulSoup, Comment
+
 import pytz
 import redis
 import requests
 import json
-import configparser
 import time
 from collections import deque
 import re
-from urllib.parse import quote_plus
 import hashlib
-from pathlib import Path
 import os
-
+import xml.etree.ElementTree as ET
 ##
 # Setup
 ##
 
-config = configparser.ConfigParser()
-config.read('config.ini')
-
+load_dotenv()  # loads from .env
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 tz = pytz.timezone('US/Eastern')
 
 app = Flask(__name__)
-
-# Replace with your own client ID and secret
-CLIENT_ID = config['oauth']['client_id']
-CLIENT_SECRET = config['oauth']['client_secret']
-
-app.secret_key = config['default']['secret_key']
+app.secret_key = os.getenv("SECRET_KEY")
 
 # Connect to Redis
 r = redis.Redis(host='localhost', port=6379, decode_responses=True)
@@ -113,7 +110,7 @@ def updates():
 
 @app.route('/')
 def index():
-    return render_template('index.html', navbar=False, loader=False)
+    return render_template('index.html', navbar=True, loader=False)
 
 @app.route('/login')
 def login():
@@ -413,17 +410,20 @@ def get_alt_detail():
         char_url = f"https://us.api.blizzard.com/profile/wow/character/{altRealm.lower()}/{altName.lower()}?namespace=profile-us&locale=en_US"
         alt = blizzard_api_request(char_url)
         if isinstance(alt, dict):
-            faction = alt['faction']['name']
-            guild = alt['guild']['name'] if 'guild' in alt else ''
-            average_item_level = alt['average_item_level']
-            level = alt['level']
-            race = alt['race']['name']
-            spec = alt['active_spec']['name'] if 'active_spec' in alt else ''
-            altClass = alt['character_class']['name']
-
             achievement_points = alt['achievement_points']
             timestamp = alt['last_login_timestamp'] / 1000
             last_login = convert_timestamp(timestamp)
+
+            alt_data = {
+                "alt_name": altName,
+                "guild": alt['guild']['name'] if 'guild' in alt else '',
+                "average_item_level": alt['average_item_level'],
+                "level": alt['level'],
+                "race": alt['race']['name'],
+                "spec": alt['active_spec']['name'] if 'active_spec' in alt else '',
+                "alt_class": alt['character_class']['name'],
+                "faction": alt['faction']['name'],
+            }
 
             # Get media
             send_sse_message('Getting media data for ' + altName)
@@ -435,29 +435,23 @@ def get_alt_detail():
                     cached_url = f"/cached-image?url={quote_plus(asset['value'])}"
                     if asset['key'] == 'main-raw':
                         main_image = cached_url
+            alt_data["main_image"] = main_image
 
-            detail = f"""
-                <article class='alt-detail {altClass.lower().replace(" ", "")}'>
-                    <header class='{faction.lower()}'>
-                        <h1>{altName}</h1>
-                        <h2>{guild}</h2>
-                        <h3><span class='{altClass.lower().replace(" ", "")}'>{average_item_level}</span> ilvl</h3>
-                        <h4>{level} {race} <span class='{altClass.lower().replace(" ", "")}'>{spec}</span> {altClass}</h4>
-                    </header>
-                    <div class='container'>
-                        <img src='{main_image}' class='image-skew' />
-                    </div>
-                </article>
-                <div id='modal-particles'></div>
-            """
-            return jsonify({'html': detail})
+            send_sse_message('Getting equipment data for ' + altName)
+            equipment_url = f"https://us.api.blizzard.com/profile/wow/character/{altRealm.lower()}/{altName.lower()}/equipment?namespace=profile-us&locale=en_US"
+            equipment = blizzard_api_request(equipment_url)
+            alt_data['equipment'] = process_equipped_items(equipment)
+
+            # Render the alt_detail.html template with alt_data
+            html_content = render_template('alt_detail.html', **alt_data)
+
+            return jsonify({'html': html_content})
         else:
             return alt  # Possibly a redirect if token expired, etc.
 
 ##
 # Helper Functions
 ##
-
 def convert_timestamp(timestamp):
     dt = datetime.fromtimestamp(timestamp, pytz.timezone('UTC'))
     central = dt.astimezone(pytz.timezone('America/Chicago'))
@@ -490,6 +484,64 @@ def get_faction_details(faction_id, headers):
     # Similarly replaced by direct calls to blizzard_api_request if needed
     url = f"https://us.api.blizzard.com/data/wow/reputation-faction/{faction_id}?namespace=static-us&locale=en_US"
     return blizzard_api_request(url, headers)
+
+
+def process_equipped_items(character_equipment_data):
+    """
+    character_equipment_data is the Blizzard JSON that has 'equipped_items' array.
+    We'll iterate and build a dict of slot -> item info, plus fetch WoWHead tooltips.
+    """
+    equipment = {}
+
+    equipped_items = character_equipment_data.get("equipped_items", [])
+    for item_data in equipped_items:
+        slot_type = item_data["slot"]["type"]     # e.g. "HEAD"
+        slot_name = item_data["slot"]["name"]     # e.g. "Head"
+
+        item_id = item_data["item"]["id"]
+        item_name = item_data["name"]
+        item_ilvl = item_data["level"]["value"] if "level" in item_data else None
+        item_quality = item_data["quality"]["name"] if "quality" in item_data else ""
+        bonus_list = item_data["bonus_list"] if "bonus_list" in item_data else ""
+
+        # Build a dict for this item
+        item = {
+            "item_id": item_id,
+            "name": item_name,
+            "ilvl": item_ilvl,
+            "quality": item_quality,
+            "slot_type": slot_type,
+            "slot_name": slot_name,
+            # We'll add .icon and .tooltip below
+        }
+
+        # 1. Fetch the Blizzard media URL for icon
+        media_url = item_data["media"]["key"]["href"] if "media" in item_data else None
+        if media_url:
+            media = blizzard_api_request(media_url)
+            if isinstance(media, dict):
+                for asset in media.get('assets', []):
+                    item["icon"] = f"/cached-image?url={quote_plus(asset['value'])}"
+
+        # 2. Fetch the WoWHead tooltip HTML
+        #    We'll write a helper function wowhead_tooltip(item_id)
+        wowhead_url = make_wowhead_url_xml(item_id, bonus_list, item_ilvl)
+        # tooltip_html = wowhead_tooltip(wowhead_url)  # your existing function
+        # cleaned_tooltip = clean_tooltip_html(tooltip_html)
+        tooltip_json = wowhead_tooltip(wowhead_url) 
+        tooltip = ''
+        if "armor" in tooltip_json['json_equip']:
+            tooltip = f"""
+                <div class=''>
+                    <p>Armor: { tooltip_json['json_equip']['armor'] }</p>
+                </div>
+            """
+            
+        item["tooltip"] = tooltip
+
+        equipment[slot_type] = item
+
+    return equipment
 
 def blizzard_api_request(url, headers=None):
     """Unified helper to handle Blizzard API calls with token checking and Redis caching."""
@@ -533,6 +585,134 @@ def blizzard_api_request(url, headers=None):
 
     # 7. Return JSON response
     return resp.json()
+
+def wowhead_tooltip(wowhead_url):
+    # 1. Check Redis cache
+    cached = r.get(wowhead_url)
+    if cached:
+        # We have the raw XML in cache
+        xml_data = cached
+    else:
+        # 2. If not cached, request from wowhead
+        resp = requests.get(wowhead_url, timeout=10)
+        resp.raise_for_status()
+        xml_data = resp.text
+
+        # 3. Store in redis (optionally set TTL, e.g. 12 hours)
+        r.set(wowhead_url, xml_data, ex=43200)
+
+    # 4. Parse the XML to extract <htmlTooltip>
+    tooltip_json = parse_wowhead_xml(xml_data)
+
+    return tooltip_json
+
+def make_wowhead_url_xml(item_id, bonus_list, ilvl):
+    """
+    Returns a WoWHead URL like:
+      https://www.wowhead.com/item={item_id}&xml?bonus=xxx:xxx&ilvl=yyy
+
+    Example:
+      https://www.wowhead.com/item=211024&xml?bonus=6652:10877:10377:10266:3198:10255&ilvl=619
+    """
+    # Base: item=xxx &xml
+    # We'll always add "&xml" directly after the item= ID
+    base_url = f"https://www.wowhead.com/item={item_id}&xml"
+
+    # Build bonus query if we have a list
+    bonus_query = ""
+    if bonus_list:
+        # e.g., "6652:10877:10377:10266:3198:10255"
+        bonus_str = ":".join(str(b) for b in bonus_list)
+        bonus_query = f"?bonus={bonus_str}"  # note the '?' as the first query param
+
+        # if we also have an ilvl, append &ilvl=...
+        if ilvl:
+            bonus_query += f"&ilvl={ilvl}"
+    else:
+        # If no bonus_list but we do have an ilvl, we'd do "?ilvl=..."
+        if ilvl:
+            bonus_query = f"?ilvl={ilvl}"
+
+    return base_url + bonus_query
+
+def parse_wowhead_xml(xml_data):
+    root = ET.fromstring(xml_data)
+    item_elem = root.find('item')
+    if not item_elem:
+        return {}
+
+    # Fields to store
+    result = {}
+
+    # If <json> exists, parse it
+    json_elem = item_elem.find('json')
+    if json_elem is not None and json_elem.text:
+        raw_json = json_elem.text.strip()
+        # Usually it's wrapped in quotes or a partial object. 
+        # We might need to ensure it's valid JSON:
+        try:
+            parsed_json = json.loads(f"{{{raw_json}}}")
+            result['json_data'] = parsed_json
+        except json.JSONDecodeError as e:
+            # handle error or skip
+            pass
+
+    # If <jsonEquip> exists, parse it
+    json_equip_elem = item_elem.find('jsonEquip')
+    if json_equip_elem is not None and json_equip_elem.text:
+        raw_json_equip = json_equip_elem.text.strip()
+        try:
+            parsed_json_equip = json.loads(f"{{{raw_json_equip}}}")
+            result['json_equip'] = parsed_json_equip
+        except json.JSONDecodeError as e:
+            # handle error or skip
+            pass
+
+    return result
+
+def clean_tooltip_html(raw_html):
+    """
+    Parses raw HTML from Wowhead's <htmlTooltip>,
+    removes comments and unneeded tags,
+    keeps only table/tr/td/th/br,
+    and returns the 'clean' HTML as a string.
+    """
+
+    # 0. Remove specific markers (like <!--nstart-->, <!--nend-->, etc.) via regex
+    #    This ensures they won't appear as leftover text. You can add more patterns if needed.
+    raw_html = re.sub(r"<!--nstart.*?-->", "", raw_html, flags=re.IGNORECASE)
+    raw_html = re.sub(r"<!--nend.*?-->", "", raw_html, flags=re.IGNORECASE)
+    raw_html = re.sub(r"<!--scstart.*?-->", "", raw_html, flags=re.IGNORECASE)
+    raw_html = re.sub(r"<!--scend.*?-->", "", raw_html, flags=re.IGNORECASE)
+    raw_html = re.sub(r"<!--ndstart.*?-->", "", raw_html, flags=re.IGNORECASE)
+    raw_html = re.sub(r"<!--ndend.*?-->", "", raw_html, flags=re.IGNORECASE)
+    # Add further patterns if you notice other consistent markers.
+
+    # 1. Parse with BeautifulSoup
+    soup = BeautifulSoup(raw_html, 'html.parser')
+
+    # 2. Remove all HTML comments
+    for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
+        comment.extract()
+
+    # 3. Define which tags you want to preserve
+    allowed_tags = {"table", "tr", "td", "th", "br"}
+
+    # 4. Traverse all tags in the soup
+    #    - If a tag is NOT in `allowed_tags`, unwrap or decompose it
+    #      (meaning we remove the tag but keep its inner text).
+    #    - If you want to keep certain attributes (e.g. <td width="100%">),
+    #      you'd further check or filter them.
+    for tag in soup.find_all():
+        if tag.name not in allowed_tags:
+            # e.g. unwrap to keep text content, but remove the tag
+            tag.unwrap()
+
+    # 5. Convert back to a string
+    cleaned_html = str(soup)
+
+    # Optionally, you can strip leading/trailing whitespace
+    return cleaned_html.strip().replace("'", "&#39;").replace('"', "&quot;")    
 
 def is_token_expired():
     if 'token_expires_at' not in session:

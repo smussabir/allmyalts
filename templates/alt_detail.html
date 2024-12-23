@@ -1,0 +1,105 @@
+{% set left_slots = ["HEAD", "NECK", "SHOULDER", "BACK", "CHEST", "WRIST", "HANDS"] %}
+{% set right_slots = ["WAIST", "LEGS", "FEET", "FINGER_1", "FINGER_2", "TRINKET_1", "TRINKET_2"] %}
+{% set weapon_slots = ["MAIN_HAND", "OFF_HAND"] %}
+{% set slot_labels = {
+  "FINGER_1": "Ring 1",
+  "FINGER_2": "Ring 2",
+  "TRINKET_1": "Trinket 1",
+  "TRINKET_2": "Trinket 2"
+} %}
+{% set enchantable = ["BACK", "CHEST", "WRIST", "HANDS", "FEET", "FINGER_1", "FINGER_2", "MAIN_HAND"] %}
+
+<article class="alt-detail {{ alt_class|lower|replace(' ', '') }}">
+  <header class="{{ faction|lower }}">
+    <h1>{{ alt_name }}</h1>
+    <h2>{{ guild }}</h2>
+    <h3>
+      <span class="{{ alt_class|lower|replace(' ', '') }}">{{ average_item_level }}</span> ilvl
+    </h3>
+    <h4>
+      {{ level }} {{ race }} 
+      <span class="{{ alt_class|lower|replace(' ', '') }}">{{ spec }}</span> 
+      {{ alt_class }}
+    </h4>
+  </header>
+  <div class="container">
+    <!-- If main_image is provided, show it, else fallback -->
+    <div id="character-model">
+      {% if main_image %}
+      <img src="{{ main_image }}" class="image-skew" alt="{{ alt_name }} image"/>
+      {% else %}
+      <img src="/static/images/placeholder.png" class="image-skew" alt="Placeholder image"/>
+      {% endif %}
+    </div>
+    <section id="equipment">
+      <!-- Left Column -->
+      <section class="equipment-col left-col">
+      {% for slot_key in left_slots %}
+      {% if slot_key in equipment %}
+          {% set item = equipment[slot_key] %}
+          <a href="https://www.wowhead.com/item={{ item.item_id }}">
+            <div class="item-row left-item" data-tooltip='{{ item.tooltip }}'>
+            <div class="slot-info">
+              <h1>{{ slot_key }}</h1>
+              <h2>{{ item.name }}</h2>
+            </div>
+            <div class="slot-icon {{ item.quality.lower()}}">
+              <img src="{{ item.icon }}" alt="{{ item.name }} icon" />
+              <span>{{ item.ilvl }}</span>
+            </div>
+          </div>
+        </a>
+      {% endif %}
+      {% endfor %}
+      </section>
+
+      <!-- Right Column -->
+      <section class="equipment-col right-col">
+      {% for slot_key in right_slots %}
+      {% if slot_key in equipment %}
+        {% set item = equipment[slot_key] %}
+        <div class="item-row right-item" data-tooltip='{{ item.tooltip }}'>
+          <!-- For the right column, we can reverse the order: icon first, then text -->
+          <div class="slot-icon {{ item.quality.lower()}}">
+            <img src="{{ item.icon }}" alt="{{ item.name }} icon" />
+            <span>{{ item.ilvl }}</span>
+          </div>
+          <div class="slot-info">
+            <h1>{{ slot_labels.get(slot_key, slot_key) }}</h1>
+            <h2>{{ item.name }}</h2>
+          </div>
+        </div>
+      {% endif %}
+      {% endfor %}
+      </section>
+    </section>
+    <!-- Bottom Row for Main-Hand / Off-Hand -->
+    <div id="weapons" class="bottom-row">
+      {% set item = equipment["MAIN_HAND"] %}
+      <div class="item-row left-item" data-tooltip='{{ item.tooltip }}'>
+        <div class="weapon-slot">
+          <h1>Main Hand</h1>
+          <h2>{{ item.name }}</h2>
+        </div>
+        <div class="slot-icon {{ item.quality.lower()}}">
+          <img src="{{ item.icon }}" alt="{{ item.name }} icon" />
+          <span>{{ item.ilvl }}</span>
+        </div>
+      </div>
+      {% if "OFF_HAND" in equipment %}
+      {% set item = equipment["OFF_HAND"] %}
+      <div class="item-row right-item" data-tooltip='{{ item.tooltip }}'>
+        <div class="slot-icon {{ item.quality.lower()}}">
+          <img src="{{ item.icon }}" alt="{{ item.name }} icon" />
+          <span>{{ item.ilvl }}</span>
+        </div>
+        <div class="weapon-slot">
+          <h1>Off Hand</h1>
+          <h2>{{ item.name }}</h2>
+        </div>
+      </div>
+      {% endif %}
+    </div>    
+  </div>
+</article>
+<div id='modal-particles'></div>

@@ -151,6 +151,69 @@ article.warlock:hover {box-shadow: 0 0 40px 0 var(--warlock);}
 article.warrior:hover {box-shadow: 0 0 40px 0 var(--warrior);}
 article.summary:hover, article.mount:hover {box-shadow: 0 0 40px 0 #ffffff;}
 
+/* Poor (Gray) */
+.poor {
+  color: #9d9d9d;
+  border-color: #9d9d9d;
+  background-color: #9d9d9d;
+}
+
+/* Common (White) */
+.common {
+  color: #ffffff;
+  border-color: #ffffff;
+  background-color: #ffffff;
+}
+
+/* Uncommon (Green) */
+.uncommon {
+  color: #1eff00;
+  border-color: #1eff00;
+  background-color: #1eff00;
+}
+
+/* Rare (Blue) */
+.rare {
+  color: #0070dd;
+  border-color: #0070dd;
+  background-color: #0070dd;
+}
+
+/* Epic (Purple) */
+.epic {
+  color: #a335ee;
+  border-color: #a335ee;
+  background-color: #a335ee;
+}
+
+/* Legendary (Orange) */
+.legendary {
+  color: #ff8000;
+  border-color: #ff8000;
+  background-color: #ff8000;
+}
+
+/* Artifact (Light Gold) */
+.artifact {
+  color: #e6cc80;
+  border-color: #e6cc80;
+  background-color: #e6cc80;
+}
+
+/* Heirloom (Blizzard Blue) */
+.heirloom {
+  color: #00ccff;
+  border-color: #00ccff;
+  background-color: #00ccff;
+}
+
+/* WoW Token (Blizzard Blue) */
+.wow-token {
+  color: #00ccff;
+  border-color: #00ccff;
+  background-color: #00ccff;
+}
+
 html {
   scroll-behavior: smooth;
   overflow-y: scroll;
@@ -164,6 +227,7 @@ body {
   background-color: var(--bs-body-bg);
   color: var(--bs-body-color);
   font-family: 'Roboto', sans-serif;
+  font-size: 16px;
 }
 
 .container {
@@ -297,48 +361,53 @@ nav li {
   display: none;
 }
 
-@media (max-width: 480px) {
+/* Small devices (tablets) */
+@media only screen and (min-width: 601px) and (max-width: 768px) {
+  body {
+    font-size: 18px;
+  }
+
   #alts .card {
     background-size: 200%;
     background-position-x: -70px;
     min-height: 300px;
   }
+
   #reps .card {
     background-size: 200%;
     background-position-x: center;
     margin: 0 5px;
-    min-height: 300px;
   }
 }
 
-@media (min-width: 481px) and (max-width: 1024px) {
+/* Medium devices (laptops) */
+@media only screen and (min-width: 1025px) and (max-width: 1280px) {
+  body {
+    font-size: 20px;
+  }
+
   #alts .card {
     background-size: 250%;
     background-position-x: -150px;
     min-height: 400px;
   }
+
   #reps .card {
-    background-size: 250%;
-    background-position-x: center;
     margin: 0 5px 20px 5px;
-    min-height: 400px;
   }
 }
 
+/* Large devices (desktops) */
+@media only screen and (min-width: 1281px) {
+  body {
+    font-size: 22px;
+  }
 
-@media (min-width: 1025px) {
   #alts .card {
     background-size: 350%;
     background-position-x: -270px;
     min-height: 500px;
   }
-  #reps .card {
-    background-size: 125%;
-    background-position-x: 50px;
-    background-position-y: bottom;
-    background-repeat: no-repeat;
-    min-height: 500px;
-  }  
 }
 
 #alts-table {
@@ -607,6 +676,7 @@ article.summary {
   position: relative;  /* create a positioned container */
 }
 
+
 .alt-detail .container {
   min-height: auto;
   overflow: hidden;
@@ -614,10 +684,11 @@ article.summary {
   z-index: 10;
 }
 
-.alt-detail .container img {
+.alt-detail #character-model {
   position: absolute;
   right: -125px;
-  top: -120px;
+  top: -140px;
+  z-index: -1;
 }
 
 .alt-detail header.alliance {
@@ -626,6 +697,20 @@ article.summary {
 
 .alt-detail header.horde {
   background-image: url('/static/images/horde.png');
+}
+
+.alt-detail header h1, .alt-detail header h2, .alt-detail header h3, .alt-detail header h4 {
+  /* Horizontal offset: 1px
+  Vertical offset: 1px
+  Blur radius: 3px
+  Shadow color: rgba(0, 0, 0, 0.5) (semi-transparent black) */
+  text-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
+}
+
+
+.alt-detail a {
+  color: #fff;
+  text-decoration: none;
 }
 
 /* h1 -> row 1, col 1 */
@@ -683,15 +768,144 @@ article.summary {
   text-transform: uppercase;
 }
 
+
+#equipment {
+  display: flex;
+  /* two columns side by side */
+  gap: 35rem;
+  color: #FFF;
+  margin-top: 60px;
+}
+
+#equipment h1, #weapons h1 {
+  color: deepskyblue;
+  font-size: .7rem;
+  font-style: normal;
+}
+
+#equipment h2, #weapons h2 {
+  font-family: "Kanit", serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-style: normal;
+}
+
+#weapons {
+  color: #FFF;
+}
+
+/* Each column has a vertical stack of items */
+.equipment-col {
+  flex: 1 1 50%; 
+  /* or set a fixed width if you prefer */
+}
+
+.equipment-col.left-col {
+  text-align: right; 
+}
+/* One row of slot info (like HEAD, NECK) plus the icon */
+.item-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.slot-info {
+}
+
+.slot-icon {
+  border-radius: var(--bs-border-radius);
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.slot-icon img {
+  border-radius: var(--bs-border-radius);
+  border-width: 2px;
+  border-style: solid;
+}
+
+.slot-icon span {
+  border-radius: var(--bs-border-radius);
+  color: #fff;
+  font-size: .8rem;
+  font-weight: bold;
+  position: absolute;
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: -4px;
+}
+
+.left-item {
+  display: flex;
+  justify-content: flex-end; /* push content to the right edge */
+  align-items: center;       /* vertical alignment */
+}
+/* For left-col items */
+.left-item .slot-info {
+  /* text portion on left */
+  text-align: right; 
+  margin-right: 1rem;
+}
+
+.left-item .slot-icon img {
+  width: 50px;
+  height: auto;
+}
+
+/* For right-col items */
+.right-item .slot-info {
+  /* text portion on right */
+  text-align: left;
+  margin-left: 1rem;
+}
+.right-item .slot-icon img {
+  width: 50px;
+  height: auto;
+}
+
+/* For the bottom row */
+.bottom-row {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center; /* or space-around, etc. */
+  gap: 2rem;
+}
+
+.item-row.weapon-slot {
+  display: flex;            /* or keep the parent's existing display */
+  flex-direction: column;   /* stack children vertically */
+  align-items: flex-start;  /* or center, etc. */
+}
+
+.left-item .weapon-slot {
+  text-align: right;
+  margin-right: 1rem;
+}
+
+
+.right-item .weapon-slot {
+  text-align: left;
+  margin-left: 1rem;
+}
+
+.weapon-slot img {
+  display: block;
+  margin: 0.5rem auto 0; 
+  width: 64px;
+  height: auto;
+}
+
 #controls {
   background-color: var(--accent);
   border-radius: var(--bs-border-radius);
   margin-bottom: 30px;
   margin-top: 10px;
-  padding: 5px;
+  padding: 5px 10px;
 }
 
-#filter label {
+#controls label {
   color: #ffffff;
   font-size: .9rem;
   font-weight: bold;
@@ -748,16 +962,12 @@ article.summary {
   transform: scale(1.4);
 }
 
-.view-toggle {
-  margin-left: auto;
-}
-
 .view-toggle button {
   border: none; /* Removes the border */
   outline: none; /* Removes the focus outline */
   background: transparent; /* Optional: makes the background transparent */
   color: #FFF;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
 .note {
@@ -780,7 +990,7 @@ article.summary {
 }
 
 .card-title {
-  border-radius: 2rem;
+  border-radius: var(--bs-border-radius);
   color: #222222;
   font-weight: bold;
   font-size: 1.3rem;
@@ -790,22 +1000,6 @@ article.summary {
   text-transform: uppercase;
   top: -15px;
   /* text-shadow: 1px 1px 4px #222222; */
-}
-
-#mounts .card-title {
-  background-color: var(--accent);
-  color: #ffffff;
-  font-size: .9em;
-  padding: 8px 10px;
-}
-
-#rares .card-title {
-  color: var(--accent);
-  font-size: 1.3em;
-  margin-right: 20px;
-  position: unset;
-  width: 5%;
-  text-align: center;
 }
 
 .card-title.summary {
@@ -892,7 +1086,7 @@ article.summary {
 }
 
 .reputations .progress-bar  {
-  margin: 5px 10px 5px 0;
+  margin: 5px 30px 5px 0;
 }
 
 .progress-bar .progress {
@@ -1036,8 +1230,6 @@ footer {
 
 /* 1. Define the animation */
 @keyframes skewAndUnskew {
-  0% {
-    transform: scale(1.1); /* Scales uniformly */  }
   10% {
     transform: translate(1px, 0px);
   }
@@ -1055,8 +1247,17 @@ footer {
   }
   100% {
     transform: skew(0deg);
+  }
+}
+
+@keyframes growAndshrink {
+  10% {
+    transform: scale(1.1); /* Scales uniformly */  
+  }
+  100% {
     transform: scale(1); /* Scales uniformly */  
   }
+
 }
 
 /* 2. Apply the animation to the element */
@@ -1069,12 +1270,29 @@ footer {
      Iteration: infinite
      Timing function: ease-in-out for smoothness 
   */
-  animation: skewAndUnskew 60s ease-in-out infinite;
-  opacity: 1;
+  animation: 
+    skewAndUnskew 60s ease-in-out infinite,
+    growAndshrink 30s ease-in-out 1;
+    opacity: 1;
   transition: opacity 1s ease; /* smooth fade over 1 second */
 }
 
 /* Faded-out state: partial or fully hidden */
 .image-skew.faded {
   opacity: 0.3; /* or 0 if you want fully invisible */
+}
+
+/* Minimal tooltip styling */
+.tooltip {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  max-width: 300px;
+  display: none; /* hidden by default */
+  z-index: 9999;
+}
+.tooltip-content {
+  /* let the HTML formatting from WoWHead remain (tables, etc.) */
 }
