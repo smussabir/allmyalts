@@ -23,13 +23,14 @@ import xml.etree.ElementTree as ET
 load_dotenv()  # loads from .env
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+CALLBACK_URL = os.getenv("CALLBACK_URL")
 tz = pytz.timezone('US/Eastern')
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 
 # Connect to Redis
-r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+r = redis.Redis(host='allmyalts-redis', port=6379, decode_responses=True)
 
 # A global queue to store SSE messages
 message_queue = deque()
@@ -117,7 +118,7 @@ def login():
     print('/login')
     return redirect(
         'https://oauth.battle.net/authorize?client_id={}&redirect_uri={}&response_type=code&scope=wow.profile'.format(
-            CLIENT_ID, 'http://localhost:8000/callback'
+            CLIENT_ID, CALLBACK_URL
         )
     )
 
@@ -144,6 +145,9 @@ def alt_detail():
 def reps():
     return render_template("reps.html", navbar=True, loader=True)
 
+# @app.route('/profile')
+# def reps():
+#     return render_template("profile.html", modal=True)
 ##
 # get_alts
 ##
@@ -284,9 +288,9 @@ def get_alts():
 
 @app.route('/get_reps', methods=['POST'])
 def get_reps():
+    print('Starting /get_reps')
     if request.method == 'POST':
-        expansion_id = request.json.get('expansion_id', 2569)
-
+        expansion_id = request.json.get('expansion_id', 2698)
         send_sse_message('Getting factions for xpac')
         xpac_url = f"https://us.api.blizzard.com/data/wow/reputation-faction/{expansion_id}?namespace=static-us&locale=en_US"
         xpac_factions = blizzard_api_request(xpac_url)
@@ -498,6 +502,9 @@ def process_equipped_items(character_equipment_data):
         slot_type = item_data["slot"]["type"]     # e.g. "HEAD"
         slot_name = item_data["slot"]["name"]     # e.g. "Head"
 
+        # if slot_type == 'HEAD':
+        #     print(json.dumps(item_data, indent=2))
+
         item_id = item_data["item"]["id"]
         item_name = item_data["name"]
         item_ilvl = item_data["level"]["value"] if "level" in item_data else None
@@ -523,20 +530,9 @@ def process_equipped_items(character_equipment_data):
                 for asset in media.get('assets', []):
                     item["icon"] = f"/cached-image?url={quote_plus(asset['value'])}"
 
-        # 2. Fetch the WoWHead tooltip HTML
-        #    We'll write a helper function wowhead_tooltip(item_id)
-        wowhead_url = make_wowhead_url_xml(item_id, bonus_list, item_ilvl)
-        # tooltip_html = wowhead_tooltip(wowhead_url)  # your existing function
-        # cleaned_tooltip = clean_tooltip_html(tooltip_html)
-        tooltip_json = wowhead_tooltip(wowhead_url) 
         tooltip = ''
-        if "armor" in tooltip_json['json_equip']:
-            tooltip = f"""
-                <div class=''>
-                    <p>Armor: { tooltip_json['json_equip']['armor'] }</p>
-                </div>
-            """
             
+        tooltip = build_tooltip(item_data)
         item["tooltip"] = tooltip
 
         equipment[slot_type] = item
@@ -549,7 +545,7 @@ def blizzard_api_request(url, headers=None):
     token = get_valid_token()
     if not token:
         return redirect(url_for('login'))
-
+    # print(token)
     # 2. See if the requested URL is in Redis
     cached_response = r.get(url)  # using 'url' as cache key
     if cached_response:
@@ -586,26 +582,6 @@ def blizzard_api_request(url, headers=None):
     # 7. Return JSON response
     return resp.json()
 
-def wowhead_tooltip(wowhead_url):
-    # 1. Check Redis cache
-    cached = r.get(wowhead_url)
-    if cached:
-        # We have the raw XML in cache
-        xml_data = cached
-    else:
-        # 2. If not cached, request from wowhead
-        resp = requests.get(wowhead_url, timeout=10)
-        resp.raise_for_status()
-        xml_data = resp.text
-
-        # 3. Store in redis (optionally set TTL, e.g. 12 hours)
-        r.set(wowhead_url, xml_data, ex=43200)
-
-    # 4. Parse the XML to extract <htmlTooltip>
-    tooltip_json = parse_wowhead_xml(xml_data)
-
-    return tooltip_json
-
 def make_wowhead_url_xml(item_id, bonus_list, ilvl):
     """
     Returns a WoWHead URL like:
@@ -635,85 +611,63 @@ def make_wowhead_url_xml(item_id, bonus_list, ilvl):
 
     return base_url + bonus_query
 
-def parse_wowhead_xml(xml_data):
-    root = ET.fromstring(xml_data)
-    item_elem = root.find('item')
-    if not item_elem:
-        return {}
+def build_tooltip(item_data):
+    quality = item_data.get("quality", {}).get("type", "common").lower()
+    name = item_data.get("name", "")
+    
+    html = f"<div class='wow-tooltip'>"
+    
+    # Name
+    html += f"<p class='item-name-{quality}'>{name}</p>"
+    
+    # Item level
+    if "level" in item_data:
+        html += f"<p class='item-level'>{item_data['level']['display_string']}</p>"
+    
+    # Binding
+    if "binding" in item_data:
+        html += f"<p class='item-binding'>{item_data['binding']['name']}</p>"
+    
+    # Slot + subclass
+    slot = item_data.get("inventory_type", {}).get("name", "")
+    subclass = item_data.get("item_subclass", {}).get("name", "")
+    html += f"<p class='item-slot'><span>{slot}</span><span>{subclass}</span></p>"
+    
+    # Armor
+    if "armor" in item_data:
+        html += f"<p class='item-armor'>{item_data['armor']['display']['display_string']}</p>"
+    
+    # Stats
+    if "stats" in item_data:
+        for stat in item_data["stats"]:
+            is_equip = stat.get("is_equip_bonus", False)
+            is_negated = stat.get("is_negated", False)
+            stat_class = "stat-equip" if is_equip else "stat-negated" if is_negated else "stat"
+            html += f"<p class='{stat_class}'>{stat['display']['display_string']}</p>"
+    
+    # Durability
+    if "durability" in item_data:
+        html += f"<p class='item-durability'>{item_data['durability']['display_string']}</p>"
+    
+    # Requirements
+    if "requirements" in item_data:
+        if "level" in item_data["requirements"]:
+            html += f"<p class='item-req'>{item_data['requirements']['level']['display_string']}</p>"
+    
+    # Sell price
+    if "sell_price" in item_data:
+        ds = item_data["sell_price"]["display_strings"]
+        html += f"""<p class='item-sell'>
+            {ds['header']}
+            <span class='gold'>{ds['gold']}g</span>
+            <span class='silver'>{ds['silver']}s</span>
+            <span class='copper'>{ds['copper']}c</span>
+        </p>"""
+    
+    html += "</div>"
+    return html
 
-    # Fields to store
-    result = {}
-
-    # If <json> exists, parse it
-    json_elem = item_elem.find('json')
-    if json_elem is not None and json_elem.text:
-        raw_json = json_elem.text.strip()
-        # Usually it's wrapped in quotes or a partial object. 
-        # We might need to ensure it's valid JSON:
-        try:
-            parsed_json = json.loads(f"{{{raw_json}}}")
-            result['json_data'] = parsed_json
-        except json.JSONDecodeError as e:
-            # handle error or skip
-            pass
-
-    # If <jsonEquip> exists, parse it
-    json_equip_elem = item_elem.find('jsonEquip')
-    if json_equip_elem is not None and json_equip_elem.text:
-        raw_json_equip = json_equip_elem.text.strip()
-        try:
-            parsed_json_equip = json.loads(f"{{{raw_json_equip}}}")
-            result['json_equip'] = parsed_json_equip
-        except json.JSONDecodeError as e:
-            # handle error or skip
-            pass
-
-    return result
-
-def clean_tooltip_html(raw_html):
-    """
-    Parses raw HTML from Wowhead's <htmlTooltip>,
-    removes comments and unneeded tags,
-    keeps only table/tr/td/th/br,
-    and returns the 'clean' HTML as a string.
-    """
-
-    # 0. Remove specific markers (like <!--nstart-->, <!--nend-->, etc.) via regex
-    #    This ensures they won't appear as leftover text. You can add more patterns if needed.
-    raw_html = re.sub(r"<!--nstart.*?-->", "", raw_html, flags=re.IGNORECASE)
-    raw_html = re.sub(r"<!--nend.*?-->", "", raw_html, flags=re.IGNORECASE)
-    raw_html = re.sub(r"<!--scstart.*?-->", "", raw_html, flags=re.IGNORECASE)
-    raw_html = re.sub(r"<!--scend.*?-->", "", raw_html, flags=re.IGNORECASE)
-    raw_html = re.sub(r"<!--ndstart.*?-->", "", raw_html, flags=re.IGNORECASE)
-    raw_html = re.sub(r"<!--ndend.*?-->", "", raw_html, flags=re.IGNORECASE)
-    # Add further patterns if you notice other consistent markers.
-
-    # 1. Parse with BeautifulSoup
-    soup = BeautifulSoup(raw_html, 'html.parser')
-
-    # 2. Remove all HTML comments
-    for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
-        comment.extract()
-
-    # 3. Define which tags you want to preserve
-    allowed_tags = {"table", "tr", "td", "th", "br"}
-
-    # 4. Traverse all tags in the soup
-    #    - If a tag is NOT in `allowed_tags`, unwrap or decompose it
-    #      (meaning we remove the tag but keep its inner text).
-    #    - If you want to keep certain attributes (e.g. <td width="100%">),
-    #      you'd further check or filter them.
-    for tag in soup.find_all():
-        if tag.name not in allowed_tags:
-            # e.g. unwrap to keep text content, but remove the tag
-            tag.unwrap()
-
-    # 5. Convert back to a string
-    cleaned_html = str(soup)
-
-    # Optionally, you can strip leading/trailing whitespace
-    return cleaned_html.strip().replace("'", "&#39;").replace('"', "&quot;")    
-
+    
 def is_token_expired():
     if 'token_expires_at' not in session:
         return True
@@ -730,7 +684,7 @@ def set_token(code):
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
         'code': code,
-        'redirect_uri': 'http://localhost:8000/callback',
+        'redirect_uri': CALLBACK_URL,
         'grant_type': 'authorization_code'
     }
     try:
@@ -740,7 +694,6 @@ def set_token(code):
         raise SystemExit(err)
 
     response_json = json.loads(response.text)
-    print(response_json)
     access_token = response_json['access_token']
     expires_in = response_json.get('expires_in', 86400)  # default 24h
 
@@ -759,4 +712,4 @@ def ceil_dt(dt, delta):
 ##
 
 if __name__ == '__main__':
-    app.run(host="localhost", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)

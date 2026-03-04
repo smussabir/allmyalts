@@ -3,5 +3,4 @@ static/.DS_Store
 cache/images
 .DS_Store
 .env
-.venv
 .gitignore

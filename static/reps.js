@@ -1,4 +1,5 @@
 const expansions = [
+    { displayName: 'Midnight', value: 2698 },
     { displayName: 'The War Within', value: 2569 },
     { displayName: 'Dragonflight', value: 2506 },
     { displayName: 'Shadowlands', value: 2414 },
@@ -145,8 +146,8 @@ $(document).ready(function () {
         option.text = expansion.displayName;
         option.value = expansion.value;
 
-        // Set "The War Within" as the default selected option
-        if (expansion.value === 2569) {
+        // Set "Midnight" as the default selected option
+        if (expansion.value === 2698) {
             option.selected = true;
         }
         selectElement.add(option);

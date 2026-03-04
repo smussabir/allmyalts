@@ -266,11 +266,16 @@ nav {
 
 .navbar-nav {
   list-style: none;
+  width: 100%;
 }
 
 nav li {
   font-size: 1.4rem;
   margin-right: 30px;
+}
+
+nav .profile-link {
+  margin-left: auto;
 }
 
 .home-content, .loader-content, .main-content {
@@ -1282,17 +1287,68 @@ footer {
   opacity: 0.3; /* or 0 if you want fully invisible */
 }
 
-/* Minimal tooltip styling */
-.tooltip {
-  position: absolute;
-  background: rgba(0,0,0,0.8);
-  color: #fff;
-  padding: 10px;
-  border-radius: 5px;
-  max-width: 300px;
-  display: none; /* hidden by default */
-  z-index: 9999;
+#tooltip {
+    position: absolute;
+    background: linear-gradient(to bottom, #1a1a2e, #16213e);
+    border: 1px solid #0070dd;
+    border-radius: 6px;
+    padding: 12px;
+    max-width: 280px;
+    display: none;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
 }
-.tooltip-content {
-  /* let the HTML formatting from WoWHead remain (tables, etc.) */
+
+#tooltip-content {
+    font-family: Arial, sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.6;
 }
+
+#tooltip-content p {
+    margin: 0;
+    padding: 1px 0;
+}
+
+.wow-tooltip {}
+
+.item-name { font-weight: bold; font-size: 1rem; }
+.item-name-rare { color: #0070dd; }
+.item-name-epic { color: #a335ee; }
+.item-name-uncommon { color: #1eff00; }
+.item-name-common { color: #ffffff; }
+.item-name-legendary { color: #ff8000; }
+
+.item-level { color: #aaaaaa; }
+.item-binding { color: #ffffff; }
+
+.item-slot {
+    display: flex;
+    justify-content: space-between;
+    color: #ffffff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.item-armor { color: #ffffff; }
+
+.stat { color: #ffffff; }
+.stat-equip { color: #1eff00; }
+.stat-negated { color: #666666; }
+
+.item-durability { color: #aaaaaa; font-size: 0.8rem; }
+.item-req { color: #aaaaaa; font-size: 0.8rem; }
+
+.item-sell {
+    color: #aaaaaa;
+    font-size: 0.8rem;
+    border-top: 1px solid #333;
+    padding-top: 4px;
+    margin-top: 4px;
+}
+
+.gold { color: #ffd700; }
+.silver { color: #c0c0c0; }
+.copper { color: #cd7f32; }

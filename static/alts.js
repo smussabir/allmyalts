@@ -435,7 +435,7 @@ function createCard(alt) {
     let altClass = alt.class.toLowerCase().replace(' ', '');
     let altFaction = alt.faction.toLowerCase();
     let altLevel = '';
-    if (alt.level < 80) {
+    if (alt.level < 90) {
         altLevel = `<p class="card-text level-icon ${altClass} ${altClass}-border">${ alt.level }</p>`;
     }
     altLocation = alt.location
