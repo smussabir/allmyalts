@@ -172,7 +172,7 @@ $(document).ready(function () {
     });
 
     // Fetch data for the default selected expansion
-    fetchReps(2569);
+    fetchReps(2698);
 });
 
 function getStandingCategory(standingName) {

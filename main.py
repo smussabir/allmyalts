@@ -118,6 +118,10 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+@app.context_processor
+def inject_auth():
+    return {'logged_in': bool(get_valid_token())}
+
 @app.route('/')
 def index():
     return render_template('index.html', navbar=True, loader=False)
