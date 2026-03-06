@@ -1,0 +1,30 @@
+<div class="profile-modal">
+  <div class="profile-header">
+    <i class="fa-regular fa-circle-user fa-2x"></i>
+    <h2>{{ battletag }}</h2>
+  </div>
+
+  <section class="profile-section">
+    <h3>Accounts</h3>
+    <ul class="account-list">
+      {% for account in wow_accounts %}
+      <li>
+        <label class="account-toggle-label">
+          <input
+            type="checkbox"
+            class="account-toggle"
+            data-account-id="{{ account.id }}"
+            {% if account.id not in hidden_accounts %}checked{% endif %}
+          >
+          <span class="account-name">Account {{ loop.index }}</span>
+          <span class="account-count">{{ account.character_count }} character{% if account.character_count != 1 %}s{% endif %}</span>
+        </label>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <div class="profile-footer">
+    <a href="/logout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Log out</a>
+  </div>
+</div>

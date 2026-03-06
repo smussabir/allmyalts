@@ -3,6 +3,16 @@ var summary = {};
 var currentView = 'cards';
 var lastSortedColumn = null;
 var lastSortDirection = 'asc';
+var hiddenAccounts = new Set();
+
+$(document).on('accountsChanged', function(_e, newHiddenAccounts) {
+    hiddenAccounts = new Set(newHiddenAccounts);
+    if (currentView === 'cards') {
+        renderCardView();
+    } else {
+        renderTableView();
+    }
+});
 
 $(document).ready(function() {
     var ajaxTime = Date.now();
@@ -57,6 +67,7 @@ $(document).ready(function() {
         localStorage.clear();
         alts = response[0];
         summary = response[1];
+        hiddenAccounts = new Set(response[2] || []);
 
         // Render cards initially
         renderCardView();
@@ -158,6 +169,7 @@ $(document).ready(function() {
         const altRealm = $(this).data('alt-realm');
     
         $('#modal-body').html('<p>Loading...</p>');
+        $('.modal-window').removeClass('profile');
         $('#modal-overlay').fadeIn();
     
         // Update the AJAX call to send name and realm_slug instead of alt_id
@@ -318,6 +330,7 @@ function renderCardView() {
     // $(card).appendTo('#alts');
 
     $.each(alts, function(i, alt) {
+        if (hiddenAccounts.has(alt.account_id)) return;
         var card = $(createCard(alt));
         $(card).appendTo('#alts');
     });
@@ -356,6 +369,7 @@ function renderTableView() {
     $('#alts').append(table);
 
     $.each(alts, function(i, alt) {
+        if (hiddenAccounts.has(alt.account_id)) return;
         let altClass = alt.class.toLowerCase().replace(' ', '');
         let altSpec = '';
         if ('spec' in alt) {

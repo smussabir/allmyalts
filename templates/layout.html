@@ -22,7 +22,7 @@
             <li class="nav-item"><a class="nav-link" aria-current="page" href="/alts">Alts</a></li>
             <!-- <li class="nav-item"><a class="nav-link" aria-current="page" href="/mounts">Mounts</a></li> -->
             <li class="nav-item"><a class="nav-link" aria-current="page" href="/reps">Reputation</a></li>
-            <li class="nav-item profile-link"><a class="nav-link" aria-current="page" href="/profile" aria-label="View profile"><i class="fa-regular fa-circle-user fa-lg"></i></a></li>
+            <li class="nav-item profile-link"><a class="nav-link" id="profile-btn" href="#" aria-label="View profile"><i class="fa-regular fa-circle-user fa-lg"></i></a></li>
           </ul>
         </nav>
         {% endif %}
@@ -46,7 +46,7 @@
       {% endblock %}
 
       <footer class="page-footer font-small blue">
-        <div class="footer-copyright text-center">© 2024 Copyright</div>
+        <div class="footer-copyright text-center">© 2024-2026 Copyright</div>
       </footer>
     </div>
     <div id="modal-overlay" class="modal-overlay" style="display: none;">
@@ -67,9 +67,22 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script>
+      $.ajaxSetup({
+        statusCode: {
+          401: function(xhr) {
+            var data = xhr.responseJSON;
+            if (data && data.redirect) {
+              window.location.href = data.redirect;
+            }
+          }
+        }
+      });
+    </script>
     <script src="https://kit.fontawesome.com/5b09270ef2.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles-plugin-emitters@2/tsparticles.plugin.emitters.min.js"></script>
+    <script src="{{ url_for('static', filename='profile.js') }}"></script>
     {% block scripts %}
     {% endblock scripts %}
   </body>

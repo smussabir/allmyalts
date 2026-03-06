@@ -1,4 +1,5 @@
-from flask import Flask, redirect, request, render_template, session, jsonify, url_for, Response, stream_with_context, abort, send_file
+from flask import Flask, redirect, request, render_template, session, jsonify, url_for, Response, stream_with_context, abort, send_file, make_response
+from functools import wraps
 from datetime import datetime, timedelta
 from dateutil import tz
 from dotenv import load_dotenv
@@ -109,45 +110,103 @@ def updates():
 # Routes
 ##
 
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not get_valid_token():
+            return redirect(url_for('login', next=request.path))
+        return f(*args, **kwargs)
+    return decorated
+
 @app.route('/')
 def index():
     return render_template('index.html', navbar=True, loader=False)
 
 @app.route('/login')
 def login():
-    print('/login')
-    return redirect(
-        'https://oauth.battle.net/authorize?client_id={}&redirect_uri={}&response_type=code&scope=wow.profile'.format(
-            CLIENT_ID, CALLBACK_URL
-        )
+    next_url = request.args.get('next', '/alts')
+    session['next'] = next_url
+
+    url = 'https://oauth.battle.net/authorize?client_id={}&redirect_uri={}&response_type=code&scope=wow.profile'.format(
+        CLIENT_ID, CALLBACK_URL
     )
+    return redirect(url)
 
 @app.route('/callback')
 def callback():
-    print('/callback')
-    if 'battlenet_token' not in session:
-        print('no token')
-        code = request.args.get('code')
-        access_token = set_token(code)
-    return redirect(url_for('alts'))
+    code = request.args.get('code')
+    set_token(code)
+
+    next_url = session.pop('next', '/alts')
+    return redirect(next_url)
 
 @app.route('/alts')
+@login_required
 def alts():
     return render_template("alts.html", navbar=True, loader=True)
 
 @app.route('/alt_detail')
+@login_required
 def alt_detail():
     name = request.args.get('name')
     realm = request.args.get('realm')
     return render_template("alt-detail.html", modal=True)
 
 @app.route('/reps')
+@login_required
 def reps():
     return render_template("reps.html", navbar=True, loader=True)
 
-# @app.route('/profile')
-# def reps():
-#     return render_template("profile.html", modal=True)
+@app.route('/logout')
+def logout():
+    r.delete('https://oauth.battle.net/userinfo')
+    r.delete('https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US')
+
+    session.clear()
+    response = make_response(redirect('/'))
+    response.delete_cookie(app.config.get('SESSION_COOKIE_NAME', 'session'))
+    return response
+
+@app.route('/profile')
+def profile():
+    user_info = blizzard_api_request('https://oauth.battle.net/userinfo')
+    if not isinstance(user_info, dict) or 'battletag' not in user_info:
+        return jsonify({'redirect': '/login'}), 401
+
+    battletag = user_info['battletag']
+
+    character_data = blizzard_api_request('https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US')
+    if not isinstance(character_data, dict):
+        return jsonify({'redirect': '/login'}), 401
+
+    wow_accounts = []
+    for account in character_data.get('wow_accounts', []):
+        wow_accounts.append({
+            'id': account['id'],
+            'character_count': len(account['characters'])
+        })
+
+    prefs_raw = r.get(f'prefs:{battletag}')
+    hidden_accounts = set(json.loads(prefs_raw).get('hidden_accounts', [])) if prefs_raw else set()
+
+    html = render_template('profile_modal.html',
+        battletag=battletag,
+        wow_accounts=wow_accounts,
+        hidden_accounts=hidden_accounts
+    )
+    return jsonify({'html': html})
+
+@app.route('/save_preferences', methods=['POST'])
+def save_preferences():
+    user_info = blizzard_api_request('https://oauth.battle.net/userinfo')
+    if not isinstance(user_info, dict) or 'battletag' not in user_info:
+        return jsonify({'redirect': '/login'}), 401
+
+    battletag = user_info['battletag']
+    data = request.get_json()
+    r.set(f'prefs:{battletag}', json.dumps({'hidden_accounts': data.get('hidden_accounts', [])}))
+    return jsonify({'success': True})
+
 ##
 # get_alts
 ##
@@ -162,8 +221,7 @@ def get_alts():
         if isinstance(user_info, dict) and 'battletag' in user_info:
             battletag = user_info['battletag']
         else:
-            # If user_info is a redirect, just return it; or handle the fallback
-            return user_info
+            return jsonify({'redirect': '/login'}), 401
 
         print('/get_alts: character data')
         send_sse_message('Building list of characters')
@@ -172,8 +230,7 @@ def get_alts():
         # Retrieve character data via our new helper
         character_data = blizzard_api_request('https://us.api.blizzard.com/profile/user/wow?namespace=profile-us&locale=en_US')
         if not isinstance(character_data, dict):
-            # Possibly a redirect
-            return character_data
+            return jsonify({'redirect': '/login'}), 401
 
         end = time.time()
         elapsed = end - start
@@ -280,7 +337,11 @@ def get_alts():
             'battletag': battletag
         }
         summary['gold'], summary['silver'], summary['copper'] = convert_money(str(total_money))
-        return [alts, summary]
+
+        prefs_raw = r.get(f'prefs:{battletag}')
+        hidden_accounts = json.loads(prefs_raw).get('hidden_accounts', []) if prefs_raw else []
+
+        return [alts, summary, hidden_accounts]
 
 ##
 # get_reps
@@ -295,7 +356,7 @@ def get_reps():
         xpac_url = f"https://us.api.blizzard.com/data/wow/reputation-faction/{expansion_id}?namespace=static-us&locale=en_US"
         xpac_factions = blizzard_api_request(xpac_url)
         if not isinstance(xpac_factions, dict) or 'name' not in xpac_factions:
-            return xpac_factions  # Possibly a redirect
+            return jsonify({'redirect': '/login'}), 401
 
         xpac_name = xpac_factions['name']
         send_sse_message('Getting factions for ' + xpac_name)
@@ -451,7 +512,7 @@ def get_alt_detail():
 
             return jsonify({'html': html_content})
         else:
-            return alt  # Possibly a redirect if token expired, etc.
+            return jsonify({'redirect': '/login'}), 401
 
 ##
 # Helper Functions
@@ -544,7 +605,7 @@ def blizzard_api_request(url, headers=None):
     # 1. Check if there's a valid token in the session
     token = get_valid_token()
     if not token:
-        return redirect(url_for('login'))
+        return 'UNAUTHORIZED'
     # print(token)
     # 2. See if the requested URL is in Redis
     cached_response = r.get(url)  # using 'url' as cache key
@@ -560,16 +621,14 @@ def blizzard_api_request(url, headers=None):
 
     resp = requests.get(url, headers=all_headers)
 
-    # 4. If token is invalid/expired => 401 => clear session, redirect to /login
+    # 4. If token is invalid/expired => 401 => clear session
     if resp.status_code == 401:
         session.clear()
-        return redirect(url_for('login'))
+        return 'UNAUTHORIZED'
 
-    # 5. If 404, just return None or handle as you wish
-    if resp.status_code == 404:
+    # 5. Non-success responses that aren't auth failures — skip gracefully
+    if not resp.ok:
         return None
-
-    resp.raise_for_status()
 
     # 6. Store the fresh response in Redis
     #    - If URL has 'profile', we set a 12-hour TTL

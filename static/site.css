@@ -284,7 +284,92 @@ nav .profile-link {
 
 .home-content, .loader-content {
   align-items: center;
-  justify-content: center;  
+  justify-content: center;
+}
+
+#home-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  z-index: 1;
+}
+
+.home-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(400px, 60vw, 900px);
+  height: clamp(400px, 60vw, 900px);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(236,0,140,0.15) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-splash {
+  position: relative;
+  z-index: 1;
+  width: clamp(320px, 45vw, 780px);
+  max-width: 90vw;
+  filter: drop-shadow(0 0 32px rgba(236,0,140,0.35));
+  animation: home-float 5s ease-in-out infinite;
+}
+
+@keyframes home-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+.home-tagline {
+  position: relative;
+  z-index: 1;
+  font-family: 'Kanit', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bs-body-color);
+}
+
+.btn-bnet {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.6rem;
+  background-color: #0074e0;
+  color: #fff;
+  font-family: 'Kanit', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.btn-bnet:hover {
+  background-color: #005bb5;
+  box-shadow: 0 0 20px rgba(0,116,224,0.5);
+}
+
+.bnet-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
 }
 
 .main-content {
@@ -556,6 +641,104 @@ article.summary {
   overflow: hidden;
   position: relative;
   padding: 20px 40px;
+}
+
+/* Profile modal — compact window size */
+.profile-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background-color: var(--dark-bg);
+  border-radius: 10px;
+  padding: 2rem;
+  height: 100%;
+  color: var(--bs-body-color);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #fff;
+}
+
+.profile-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'Kanit', sans-serif;
+  color: var(--accent);
+}
+
+.profile-section h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--bs-body-color);
+  margin-bottom: 0.75rem;
+}
+
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.account-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.account-toggle-label:hover {
+  background-color: rgba(255,255,255,0.05);
+}
+
+.account-toggle-label input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.account-name {
+  flex: 1;
+  color: #fff;
+}
+
+.account-count {
+  font-size: 0.8rem;
+  color: var(--bs-body-color);
+}
+
+.profile-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: opacity 0.15s;
+}
+
+.btn-logout:hover {
+  opacity: 0.75;
+}
+
+/* Profile modal uses a narrower window */
+.modal-window.profile {
+  width: 360px;
+  height: auto;
+  max-height: 80vh;
 }
 
 /* Example close button (optional) */
