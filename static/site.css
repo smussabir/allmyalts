@@ -920,6 +920,27 @@ article.summary {
   background-image: url('/static/images/bg/paladin.webp');
 }
 
+.alt-detail.paladin::after {
+  content: '';
+  position: absolute;
+  width: 70%;
+  padding-bottom: 70%;
+  background: radial-gradient(circle, rgba(255, 220, 50, 0.8) 0%, rgba(255, 180, 0, 0.45) 35%, rgba(255, 140, 0, 0.18) 60%, transparent 75%);
+  border-radius: 50%;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -40%);
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+  animation: paladin-pulse 3s ease-in-out infinite;
+}
+
+@keyframes paladin-pulse {
+  0%, 100% { opacity: 0.85; transform: translate(-50%, -40%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -40%) scale(1.18); }
+}
+
 .alt-detail.priest::before {
   background-image: url('/static/images/bg/priest.webp');
 }

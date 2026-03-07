@@ -648,64 +648,38 @@ const classParticleConfigs = {
       }
     },
     paladin: {
-    // Fullscreen disabled so it stays in your container
-    fullScreen: { enable: false },
-    background: { color: "transparent" },
-
-    // No default particles, rely on an emitter
-    particles: {
-        number: { value: 0 }
-    },
-
-    // Use the emitters plugin
-    emitters: [
-        {
-        // Position at 50% across, 20% down, in percentage mode
-        position: { x: 50, y: 60, mode: "percent" },
-
-        size: { width: 0, height: 0 },
-        rate: {
-            quantity: 1, // spawn exactly one particle
-            delay: 0     // immediately
-        },
-
+        fullScreen: { enable: false },
+        background: { color: "transparent" },
         particles: {
-            // Shape: single image
-            shape: {
-            type: "image",
-            image: {
-                // path to your PNG
-                src: "/static/images/paladin-bubble.png",
-                width: 1000,   // actual image width in px
-                height: 1000   // actual image height in px
-            }
+            number: { value: 80 },
+            color: { value: ["#FFD700", "#FFF8DC", "#FFB800", "#FFFACD", "#FFFFFF", "#FFE566"] },
+            shape: { type: "circle" },
+            opacity: {
+                value: { min: 0.3, max: 1.0 },
+                animation: { enable: true, speed: 0.9, minimumValue: 0, sync: false }
             },
-
-            // Adjust the drawn size of the orb in px
-            size: {
-            value: 300
-            },
-
-            // If you want transparency, set an opacity
-            opacity: { value: 0.05 },
-
-            // Keep it stationary
+            size: { value: { min: 1, max: 4.5 } },
             move: {
-            enable: true,
-            speed: 0,
-            outModes: { default: "none" }
-            },
-
-            // Optional: add slow rotation
-            rotate: {
-            animation: {
                 enable: true,
-                speed: 2
-            }
+                speed: { min: 0.4, max: 2.0 },
+                direction: "top",
+                random: true,
+                straight: false,
+                outModes: { default: "out" }
+            },
+            shadow: {
+                enable: true,
+                color: "#FFD700",
+                blur: 14
+            },
+            twinkle: {
+                particles: {
+                    enable: true,
+                    frequency: 0.1,
+                    opacity: 1
+                }
             }
         }
-        }
-    ]
     },
 
     demonhunter: {
