@@ -50,7 +50,7 @@ Templates in `templates/` extend `layout.html` (navbar, modal overlay, SSE liste
 - `static/reps.js` — reputation filtering by expansion, tier visualization
 - `static/alt-detail.js` — equipment modal interactions
 
-CSS uses custom properties for WoW class colors (12 classes), faction colors (Horde/Alliance), reputation tier gradients, and a dark theme with accent pink `#ec008c`.
+CSS uses custom properties for WoW class colors (13 classes), faction colors (Horde/Alliance), reputation tier gradients, and a dark theme with accent pink `#ec008c`.
 
 ### Token Management
 

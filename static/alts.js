@@ -215,6 +215,7 @@ $(document).ready(function() {
                     // No config for this class => do nothing or console.log
                     console.log(`No particle config found for class: ${altClass}`);
                 }
+
             },
             error: function(xhr, status, error) {
                 $('#modal-body').html('<p>Error loading details.</p>');

@@ -151,6 +151,21 @@ article.warlock:hover {box-shadow: 0 0 40px 0 var(--warlock);}
 article.warrior:hover {box-shadow: 0 0 40px 0 var(--warrior);}
 article.summary:hover, article.mount:hover {box-shadow: 0 0 40px 0 #ffffff;}
 
+/* box-shadow on #modal-body — an element's own box-shadow is never clipped by its own overflow */
+#modal-body:has(article.alt-detail.deathknight):hover { box-shadow: 0 0 40px 8px var(--deathknight); }
+#modal-body:has(article.alt-detail.demonhunter):hover { box-shadow: 0 0 40px 8px var(--demonhunter); }
+#modal-body:has(article.alt-detail.druid):hover       { box-shadow: 0 0 40px 8px var(--druid); }
+#modal-body:has(article.alt-detail.evoker):hover      { box-shadow: 0 0 40px 8px var(--evoker); }
+#modal-body:has(article.alt-detail.hunter):hover      { box-shadow: 0 0 40px 8px var(--hunter); }
+#modal-body:has(article.alt-detail.mage):hover        { box-shadow: 0 0 40px 8px var(--mage); }
+#modal-body:has(article.alt-detail.monk):hover        { box-shadow: 0 0 40px 8px var(--monk); }
+#modal-body:has(article.alt-detail.paladin):hover     { box-shadow: 0 0 40px 8px var(--paladin); }
+#modal-body:has(article.alt-detail.priest):hover      { box-shadow: 0 0 40px 8px var(--priest); }
+#modal-body:has(article.alt-detail.rogue):hover       { box-shadow: 0 0 40px 8px var(--rogue); }
+#modal-body:has(article.alt-detail.shaman):hover      { box-shadow: 0 0 40px 8px var(--shaman); }
+#modal-body:has(article.alt-detail.warlock):hover     { box-shadow: 0 0 40px 8px var(--warlock); }
+#modal-body:has(article.alt-detail.warrior):hover     { box-shadow: 0 0 40px 8px var(--warrior); }
+
 /* Poor (Gray) */
 .poor {
   color: #9d9d9d;
@@ -685,55 +700,65 @@ article.summary {
 /* The modal-window is sized within the overlay */
 .modal-window {
   background: none;
-  width: 70%;      /* or any desired width */
-  height: 45%;     /* or any desired height */
+  width: clamp(600px, 80vw, 1200px);
+  height: auto;
+  max-height: 92vh;
   display: flex;
-  flex-direction: column; /* so content can stretch */
+  flex-direction: column;
   position: relative;
-  /* overflow: hidden;        hide scrollbars, if desired */
+  border-radius: 10px;
 }
 
 /* The .modal-content takes up remaining space in the .modal-window */
 .modal-content {
-  flex: 1; /* let it grow and fill vertical space */
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* allows flex children to shrink below their content size */
 }
 
 /* #modal-body also stretches to fill, if you have additional elements in .modal-content */
 #modal-body {
   flex: 1;
-  /* overflow: auto; scroll if content is too tall */
   display: flex;
   flex-direction: column;
   position: relative;
-  /* overflow: hidden; */
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  border-radius: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
 }
+
+#modal-body::-webkit-scrollbar        { width: 5px; }
+#modal-body::-webkit-scrollbar-track  { background: transparent; }
+#modal-body::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.2); border-radius: 3px; }
+#modal-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
 #modal-particles {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 90%;
+  height: 90%;
   pointer-events: none; /* so clicks pass through to underlying content */
   z-index: 1; /* tweak this if you want particles behind text (z-index: 0) or on top (z-index > ?). */
 }
 
 /* Finally, ensure .alt-detail can fill the space inside #modal-body */
 .alt-detail {
-  flex: 1;
-  /* optionally ensure it has any layout specifics:
-     e.g. background-size, padding, or no overflow */
+  flex: 1 0 auto;  /* grow to fill when short; refuse to shrink when tall (triggers #modal-body scroll) */
+  width: 100%;
   display: flex;
   flex-direction: column;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   border-radius: 10px;
-  overflow: hidden;
+  overflow: clip;
   position: relative;
-  padding: 20px 40px;
+  /* padding: clamp(10px, 1.5vh, 20px) 40px 4px; */
 }
 
 /* Profile modal — compact window size */
@@ -963,7 +988,7 @@ article.summary {
 
 .alt-detail header {
   background: none;
-  padding-left: 130px;
+  padding-left: clamp(80px, 9vw, 130px);
   /* Enable grid layout with two columns */
   display: grid;
   grid-template-columns: auto 1fr;
@@ -973,7 +998,7 @@ article.summary {
   font-style: normal;
   inset: 0;
   background-position: left;
-  background-size: 125px;
+  background-size: clamp(70px, 9vw, 125px);
   background-repeat: no-repeat;
   position: relative;  /* create a positioned container */
 }
@@ -981,15 +1006,22 @@ article.summary {
 
 .alt-detail .container {
   min-height: auto;
-  overflow: hidden;
   height: auto;
   z-index: 10;
+  padding-bottom: 0;
+  margin-left: 0;
+  max-width: 1200px;
+}
+
+.equipment-col .item-row:last-child {
+  margin-bottom: 0;
 }
 
 .alt-detail #character-model {
   position: absolute;
-  right: -125px;
-  top: -140px;
+  left: 50%;
+  transform: translateX(-50%);
+  top: clamp(-200px, -10vh, -60px);
   z-index: -1;
 }
 
@@ -1042,41 +1074,41 @@ article.summary {
 }
 
 .alt-detail header h1 {
-  font-size: 4rem;
+  font-size: clamp(2rem, 3.5vw, 4rem);
   text-transform: uppercase;
 }
 
 .alt-detail header h2 {
-  font-size: 1.5rem;
+  font-size: clamp(0.9rem, 1.3vw, 1.5rem);
   margin-top: -5px;
   min-height: 24px;
 }
 
 .alt-detail header h3 {
-  font-size: 1.4rem;
-  margin-left: 45px;
-  padding-left: 45px;
+  font-size: clamp(0.85rem, 1.2vw, 1.4rem);
+  margin-left: clamp(20px, 3vw, 45px);
+  padding-left: clamp(20px, 3vw, 45px);
 }
 
 .alt-detail header h3 span {
-  font-size: 2rem;
+  font-size: clamp(1.1rem, 1.7vw, 2rem);
 }
 
 .alt-detail header h4 {
-  margin-left: 45px;
-  padding-left: 45px;
-  margin-top: -30px;
-  font-size: 2rem;
+  margin-left: clamp(20px, 3vw, 45px);
+  padding-left: clamp(20px, 3vw, 45px);
+  margin-top: -20px;
+  font-size: clamp(1.1rem, 1.7vw, 2rem);
   text-transform: uppercase;
 }
 
 
 #equipment {
   display: flex;
-  /* two columns side by side */
-  gap: 35rem;
+  /* two columns side by side; gap creates the space the character model sits in */
+  gap: clamp(8rem, 28vw, 35rem);
   color: #FFF;
-  margin-top: 60px;
+  margin-top: clamp(10px, 2.5vh, 40px);
 }
 
 #equipment h1, #weapons h1 {
@@ -1098,21 +1130,30 @@ article.summary {
 
 /* Each column has a vertical stack of items */
 .equipment-col {
-  flex: 1 1 50%; 
-  /* or set a fixed width if you prefer */
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .equipment-col.left-col {
   text-align: right; 
+  margin-left: 40px;
 }
+
+.equipment-col.right-col {
+  margin-left: -40px; 
+}
+
 /* One row of slot info (like HEAD, NECK) plus the icon */
 .item-row {
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
+  min-width: 0;
+  margin-bottom: clamp(0.4rem, 1vh, 1rem);
 }
 
 .slot-info {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .slot-icon {
@@ -1122,6 +1163,7 @@ article.summary {
 }
 
 .slot-icon img {
+  display: block;
   border-radius: var(--bs-border-radius);
   border-width: 2px;
   border-style: solid;
@@ -1151,8 +1193,9 @@ article.summary {
   margin-right: 1rem;
 }
 
-.left-item .slot-icon img {
-  width: 50px;
+.left-item .slot-icon img,
+.right-item .slot-icon img {
+  width: clamp(36px, 3.5vw, 54px);
   height: auto;
 }
 
@@ -1162,16 +1205,12 @@ article.summary {
   text-align: left;
   margin-left: 1rem;
 }
-.right-item .slot-icon img {
-  width: 50px;
-  height: auto;
-}
 
 /* For the bottom row */
 .bottom-row {
-  margin-top: 2rem;
+  margin-top: clamp(0.5rem, 2vh, 2rem);
   display: flex;
-  justify-content: center; /* or space-around, etc. */
+  justify-content: center;
   gap: 2rem;
 }
 
